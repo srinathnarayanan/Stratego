@@ -1,21 +1,14 @@
 import * as React from 'react'
 
 export interface ChatInputProps {
-  onSubmitMessage: (message: string) => void,
+  onSubmitMessage: () => void,
   name: string
 }
 
-export interface ChatInputState {
-  message: string
-}
-
-export class ChatInput extends React.Component<ChatInputProps, ChatInputState> {
+export class ChatInput extends React.Component<ChatInputProps> {
   
   constructor(props: ChatInputProps) {
     super(props);
-    this.state = {
-      message: ''
-    }
   }
 
   render() {
@@ -24,7 +17,7 @@ export class ChatInput extends React.Component<ChatInputProps, ChatInputState> {
         action="."
         onSubmit={e => {
           e.preventDefault();
-          this.props.onSubmitMessage(this.state.message);
+          this.props.onSubmitMessage();
           this.setState({ message: '' });
         }}
       >

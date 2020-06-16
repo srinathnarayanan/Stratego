@@ -43,3 +43,6 @@ table, td, th {
 td.Focussed {
   border: 5px solid green;  
 }
+.message {
+  display: inline-block;
+}

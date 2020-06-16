@@ -1,11 +1,10 @@
 import * as React from 'react'
-import { Piece, Color } from "../DataModels/RoomContent"
-import { number } from 'prop-types'
+import { PieceContent, Color } from "../DataModels/ContentModels"
 
 interface SquareProps {
     rowIndex: number
     columnIndex: number
-    piece: Piece
+    piece: PieceContent
     onClick: () => void,
     focusRowIndex: number,
     focusColumnIndex: number

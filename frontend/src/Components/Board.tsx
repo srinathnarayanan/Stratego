@@ -1,15 +1,17 @@
 import * as React from 'react'
-import { PieceMap, Piece } from '../DataModels/RoomContent'
+import { PieceMap, PieceContent, Status } from '../DataModels/ContentModels'
 import { Square } from "./Square"
 
 export interface BoardProps {
-  playerPieces: PieceMap
+  playerPieces: PieceMap,
+  status: Status,
+  onClickStartButton: (pieces: PieceMap) => void
 }
 
 export interface BoardState {
   playerPieces: PieceMap,
   focusRowIndex: number,
-  focusColumnIndex: number
+  focusColumnIndex: number,
 }
 
 
@@ -33,8 +35,8 @@ export class Board extends React.Component<BoardProps, BoardState> {
       const oldPieceKey = this.state.focusColumnIndex + "," + this.state.focusRowIndex
       const newPieceKey = columnIndex + "," + rowIndex  
       const playerPieces = this.state.playerPieces
-      const oldPiece : Piece = playerPieces[oldPieceKey]
-      const newPiece : Piece = playerPieces[newPieceKey]
+      const oldPiece : PieceContent = playerPieces[oldPieceKey]
+      const newPiece : PieceContent = playerPieces[newPieceKey]
       playerPieces[newPieceKey] = oldPiece
       playerPieces[oldPieceKey] = newPiece
       this.setState({playerPieces:playerPieces, focusRowIndex: undefined, focusColumnIndex: undefined})
@@ -58,11 +60,15 @@ export class Board extends React.Component<BoardProps, BoardState> {
 
   render() {
     return( 
+      <>
       <table className="center">
         <tbody>
          {this.renderBoardRows()}
         </tbody>
       </table>
+      {this.props.status === Status.SetUp ? 
+      <button onClick={() => this.props.onClickStartButton(this.state.playerPieces)}> Start game! </button>: <></>}   
+      </>
       )
   }
 }

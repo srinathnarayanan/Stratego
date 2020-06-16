@@ -1,4 +1,4 @@
-import {Color, Piece, PieceMap} from "../DataModels/RoomContent"
+import {Color, PieceContent, PieceMap} from "../DataModels/ContentModels"
 
 export const initializePieces = (color: Color) : PieceMap => {
     var pieces : PieceMap = {}
@@ -59,7 +59,6 @@ const addDeadZones = (pieces: PieceMap) => {
   const deadZoneCoordinates = ["2,4", "3,4", "2,5",  "3,5", "6,4", "7,4", "6,5", "7,5",]
   for (var i = 0; i < 8; i++) {
     const imageIndex : number = i % 4
-    console.log(imageIndex)
     pieces[deadZoneCoordinates[i]] = {rank: -1, index: i, name: "Water" + imageIndex.toString(), inPlay: true, color: Color.Water}
   }
 }

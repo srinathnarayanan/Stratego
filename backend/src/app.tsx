@@ -1,7 +1,8 @@
 import { Server } from "ws"
-import { RoomContent, Status, Color, PlayerContent } from "./DataModels/RoomContent";
-import { InitialContent } from "./DataModels/InitialContent"
+import { RoomContent, Status, Color, PlayerContent } from "./DataModels/ContentModels";
+import { InitialMessage, StatusMessage, Message } from "./DataModels/MessageModels"
 import { initializePieces } from "./GamePlay/Initializer";
+import { processMessage } from "./GamePlay/ProcessMessage";
 
 type RoomMap = Record<string, RoomContent>;
 var rooms : RoomMap = {};
@@ -26,15 +27,17 @@ const stringyFyRooms = () => {
 wss.on('connection', function connection(ws) {
   ws.on('message', function incoming(data) {
     data = JSON.parse(data)
-    var roomNumber = data.roomNumber
+    const message = data as Message
+    var roomNumber = message.roomNumber
 
+    console.log("roomnumber:" + roomNumber)
     //if no room number, game is getting started
     if(!roomNumber) {
       const wsId = uuidv4();
       roomNumber = uuidv4();
-      const color = data.color === "red" ? Color.Red : Color.Blue;
+      const color = message.color;
       const player1 : PlayerContent = {
-        name: data.name,
+        name: message.name,
         color: color,
         pieces: initializePieces(color),
         customWs: { ws: ws, id: wsId}
@@ -42,13 +45,17 @@ wss.on('connection', function connection(ws) {
 
       rooms[roomNumber] = {
         player1: player1,
-        player2: null,
+        player2: undefined,
         status: Status.NotStarted
       };
       
-      const initialData : InitialContent = {
+      const initialData : InitialMessage = {
+        name: player1.name,
+        color: player1.color,
         roomNumber: roomNumber,
-        initialPositions: player1.pieces
+        initialPositions: player1.pieces,
+        status: Status.NotStarted,
+        wsId: wsId
       }
 
       ws.send(JSON.stringify(initialData));
@@ -56,9 +63,9 @@ wss.on('connection', function connection(ws) {
     } else {
       if (rooms[roomNumber]) {
         //connecting to existing room
-        if (rooms[roomNumber].player2 == null) {
+        if (!rooms[roomNumber].player2) {
           // only 1 player has connected tll now
-            if (rooms[roomNumber].player1.name === data.name) {
+            if (rooms[roomNumber].player1.name === message.name) {
               //same name, error out
               ws.send(JSON.stringify({error: "same name as player1. please change your name."}))              
             } else {
@@ -68,32 +75,47 @@ wss.on('connection', function connection(ws) {
               
               //add player 2
               const player2 : PlayerContent = {
-                name: data.name,
+                name: message.name,
                 color: color,
                 pieces: initializePieces(color),
                 customWs: { ws: ws, id: wsId}
               }
 
               rooms[roomNumber].player2 = player2 
-              rooms[roomNumber].status = Status.Started;
+              rooms[roomNumber].status = Status.SetUp;
   
-              const initialData : InitialContent = {
+              const initialData : InitialMessage = {
+                name: player2.name,
+                color: player2.color,        
                 roomNumber: roomNumber,
-                initialPositions: player2.pieces
+                initialPositions: player2.pieces,
+                status: Status.SetUp,
+                wsId: wsId
               }
         
               ws.send(JSON.stringify(initialData));
+
+              const player1 = rooms[roomNumber].player1;
+              const statusMessage : StatusMessage = {
+                name: player1.name,
+                color: player1.color,        
+                roomNumber: roomNumber,
+                status: Status.SetUp,
+                wsId: player1.customWs.id
+              }
+
+              player1.customWs.ws.send(JSON.stringify(statusMessage))
           }
         } else {
-          //2 players already joied, error out
-          ws.send(JSON.stringify({error: "2 players have already joined this game."}))
+          console.log("going to process")
+            processMessage(rooms[roomNumber], message, ws)
         }
       } else {
         //invalid room code, error out
         ws.send(JSON.stringify({error: "room doesn't exist. create the room instead."}))
       }
     }
-  stringyFyRooms();  
+  //stringyFyRooms();  
   });
 
   ws.on('close', function close(){
@@ -112,7 +134,7 @@ function removeWebsocket(ws: WebSocket) {
       break;
     }
   }
-  stringyFyRooms()
+  //stringyFyRooms()
 }
 
 /*
