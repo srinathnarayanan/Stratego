@@ -128,7 +128,7 @@ export class Board extends React.Component<BoardProps, BoardState> {
 
   render() {
     return( 
-      <>
+      <div className="Board">
       <table className="center">
         <tbody>
          {this.renderBoardRows()}
@@ -136,7 +136,7 @@ export class Board extends React.Component<BoardProps, BoardState> {
       </table>
       {this.props.status === Status.Setup || Status.SetUpMidway ? 
       <button className={this.state.startButtonClassName} onClick={() => this.onClickStartButton()}> Start game! </button>: <></>}   
-      </>
+      </div>
       )
   }
 }

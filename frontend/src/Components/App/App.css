@@ -54,12 +54,20 @@ td.SemiFocussedBlue {
 
 .Message {
   float: left;
+  padding: 5px;
+  margin: 20px
 }
 
 .Metadata {
   float: right;
+  padding: 5px;
+  margin: 20px;
 }
 
 button.Invisible {
   display: none;
+}
+
+.Board {
+  margin: 25px;
 }
