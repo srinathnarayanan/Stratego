@@ -82,14 +82,14 @@ wss.on('connection', function connection(ws) {
               }
 
               rooms[roomNumber].player2 = player2 
-              rooms[roomNumber].status = Status.SetUp;
+              rooms[roomNumber].status = Status.Setup;
   
               const initialData : InitialMessage = {
                 name: player2.name,
                 color: player2.color,        
                 roomNumber: roomNumber,
                 initialPositions: player2.pieces,
-                status: Status.SetUp,
+                status: Status.Setup,
                 wsId: wsId
               }
         
@@ -100,7 +100,7 @@ wss.on('connection', function connection(ws) {
                 name: player1.name,
                 color: player1.color,        
                 roomNumber: roomNumber,
-                status: Status.SetUp,
+                status: Status.Setup,
                 wsId: player1.customWs.id
               }
 

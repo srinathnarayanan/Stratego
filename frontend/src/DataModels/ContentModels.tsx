@@ -32,9 +32,12 @@ export enum Color {
 
 export enum Status {
     NotStarted,
-    SetUp,
-    Started,
-    Paused
+    Setup,
+    SetUpMidway,
+    WaitingForRed,
+    WaitingFoBlue,
+    Paused,
+    Finished
 }
 
 export type PieceMap = Record<string, PieceContent>;

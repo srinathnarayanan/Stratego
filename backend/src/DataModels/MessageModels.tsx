@@ -17,12 +17,15 @@ export function instanceOfInitialMessage(object: any): object is InitialMessage 
 }
 
 export interface ArrangedPiecesMessage extends Message {
-    arrangedPositions: PieceMap
+    logMessage: string,
+    arrangedPositions: PieceMap,
+    status: Status
 }
 
 export function instanceOfArrangedPiecesMessage(object: any): object is ArrangedPiecesMessage {
-    return 'arrangedPositions' in object;
+    return 'arrangedPositions' in object && 'status' in object && 'logMessage' in object;
 }
+
 
 export interface StatusMessage extends Message {
     status: Status

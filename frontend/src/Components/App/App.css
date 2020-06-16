@@ -43,6 +43,23 @@ table, td, th {
 td.Focussed {
   border: 5px solid green;  
 }
-.message {
-  display: inline-block;
+
+td.SemiFocussedRed {
+  border: 5px solid Red
+}
+
+td.SemiFocussedBlue {
+  border: 5px solid Blue
+}
+
+.Message {
+  float: left;
+}
+
+.Metadata {
+  float: right;
+}
+
+button.Invisible {
+  display: none;
 }

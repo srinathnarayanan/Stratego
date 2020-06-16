@@ -7,14 +7,21 @@ interface SquareProps {
     piece: PieceContent
     onClick: () => void,
     focusRowIndex: number,
-    focusColumnIndex: number
+    focusColumnIndex: number,
+    possibleMoves: string[],
+    playerColor: Color
 }
   
 export class Square extends React.Component<SquareProps> {
   
     getFocusClassName() : string {
-        return (this.props.focusRowIndex === this.props.rowIndex && this.props.focusColumnIndex === this.props.columnIndex) ?
-        "Focussed" : "NotFocussed";
+        if (this.props.focusRowIndex === this.props.rowIndex && this.props.focusColumnIndex === this.props.columnIndex) {
+            return "Focussed"
+        } else if (this.props.possibleMoves.find(x => x === (this.props.columnIndex + "," + this.props.rowIndex))) {
+            return this.props.playerColor === Color.Red ? "SemiFocussedRed" : "SemiFocussedBlue"
+        } else {
+            return "NotFocussed"
+        }
     }
     
     constructor(props: SquareProps) {
@@ -28,11 +35,12 @@ export class Square extends React.Component<SquareProps> {
         const focusClassName = this.getFocusClassName();
         var imageName: string
         if (this.props.piece) {
-            imageName = this.props.piece.name
-            if (this.props.piece.color === Color.Red) {
-                imageName += "Red"
-            } else if (this.props.piece.color === Color.Blue) {
-                imageName += "Blue"
+            if (this.props.piece.color === this.props.playerColor) {
+                imageName = this.props.piece.name + Color[this.props.piece.color]
+            } else if (this.props.piece.color === Color.Water) {
+                imageName = this.props.piece.name
+            } else {
+                imageName = "Blocked" + Color[this.props.piece.color]
             }
         } else {
             imageName = "Empty"

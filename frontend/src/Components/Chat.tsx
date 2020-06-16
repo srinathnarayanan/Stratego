@@ -48,32 +48,41 @@ class Chat extends React.Component<{}, ChatState> {
     this.ws.onmessage = evt => {
       // on receiving a message, add it to the list of messages
       const message = JSON.parse(evt.data)
-
       if (!this.state.receivedRoomNumber) {
         if (instanceOfInitialMessage(message)) {
           const initialContent = message as InitialMessage
-          this.setState({receivedRoomNumber: initialContent.roomNumber, playerPieces: initialContent.initialPositions, status: initialContent.status, color: initialContent.color, wsId: initialContent.wsId});
+          this.setState({
+            receivedRoomNumber: initialContent.roomNumber, 
+            playerPieces: initialContent.initialPositions, 
+            status: initialContent.status, 
+            color: initialContent.color, 
+            wsId: initialContent.wsId
+          });
+          this.addMessage("Other player has joined the game")
         } else if (instanceOfErrorMessage(message)) {
           const errorContent = message as ErrorMessage
           alert(errorContent.error);
         }
       } else {
-        if (instanceOfStatusMessage(message)) {
-          const statusMessage = message as StatusMessage;
-          alert("status changed to " + statusMessage.status)
-          this.setState({status: statusMessage.status})
-        } else if (instanceOfArrangedPiecesMessage(message)) {
-          var opponentPieces = message.arrangedPositions
+        if (instanceOfArrangedPiecesMessage(message)) {
+          const arrangedPiecesMessage = message as ArrangedPiecesMessage;
+          var opponentPieces = arrangedPiecesMessage.arrangedPositions
           var playerPieces = this.state.playerPieces
           for (var i = 0; i < 10; i ++) {
             for (var j = 0; j < 10; j++) {
                const key = i + "," + j
-               if (!playerPieces[key]) {
+
+               if ((this.state.status < Status.WaitingForRed && !playerPieces[key]) || (this.state.status >= Status.WaitingForRed)) {
                   playerPieces[key] = opponentPieces[key]
-               }
+               } 
             }
           }
-          this.setState({playerPieces: playerPieces})
+          this.setState({playerPieces: playerPieces, status: arrangedPiecesMessage.status})
+          this.addMessage(arrangedPiecesMessage.logMessage)
+        } else if (instanceOfStatusMessage(message)) {
+          const statusMessage = message as StatusMessage;
+          this.setState({status: statusMessage.status})
+
         }
       }
     }
@@ -95,15 +104,36 @@ class Chat extends React.Component<{}, ChatState> {
     // on submitting the ChatInput form, send the message, add it to the list and reset the input
     const message : Message = { name: this.state.name, color: this.state.color, roomNumber: this.state.roomNumber, wsId: this.state.wsId }
     this.ws.send(JSON.stringify(message))
-    this.addMessage("game start request")
+    this.addMessage("joining game ...")
   }
 
-  submitPiecesArrangedMessage = (pieces: PieceMap) => {
-    const message : ArrangedPiecesMessage = { name: this.state.name, color: this.state.color, arrangedPositions: pieces, roomNumber: this.state.receivedRoomNumber, wsId: this.state.wsId }
+  submitPiecesArrangedMessage = (pieces: PieceMap, logMessage: string) => {
+    const message : ArrangedPiecesMessage = { 
+      name: this.state.name, 
+      color: this.state.color, 
+      arrangedPositions: pieces, 
+      roomNumber: this.state.receivedRoomNumber, 
+      wsId: this.state.wsId,
+      status: this.state.status,
+      logMessage: logMessage 
+    }
     this.ws.send(JSON.stringify(message))
-    this.addMessage("arranged pieces sent")
+    this.addMessage(logMessage)
   }
 
+  submitMoveMessage = (pieces: PieceMap, logMessage: string, isFlagTaken: boolean) => {
+    const message : ArrangedPiecesMessage = { 
+      name: this.state.name, 
+      color: this.state.color, 
+      arrangedPositions: pieces, 
+      roomNumber: this.state.receivedRoomNumber, 
+      wsId: this.state.wsId,
+      status: isFlagTaken ? Status.Finished : this.state.status,
+      logMessage: logMessage
+    }
+    this.ws.send(JSON.stringify(message))
+    this.addMessage(logMessage)    
+  }
 
   render() {
     return !this.state.receivedRoomNumber ? (
@@ -140,12 +170,22 @@ class Chat extends React.Component<{}, ChatState> {
       </div>
     ) :  
     <>
+    <div className="Message">
       {this.state.messages.map((value : string) => {
-        return <p className="message"> {value} </p>;
+        return <><p> {value} </p><br/></>
       })}
+      </div>
       <div>
-        roomNumber: <h4>{this.state.receivedRoomNumber}</h4>
-        <Board playerPieces={this.state.playerPieces} status={this.state.status} onClickStartButton={this.submitPiecesArrangedMessage}></Board>
+        <div className="Metadata">
+        roomNumber: <h4>{this.state.receivedRoomNumber}</h4><br/>
+        status: <h4>{Status[this.state.status]}</h4>
+        </div>
+        <Board 
+        playerColor={this.state.color} 
+        playerPieces={this.state.playerPieces} 
+        status={this.state.status} 
+        sendMoveMessage={this.submitMoveMessage}
+        onClickStartButton={this.submitPiecesArrangedMessage}></Board>
       </div>
     </>
   }

@@ -1,19 +1,17 @@
-import { ErrorMessage, Message, ArrangedPiecesMessage, instanceOfArrangedPiecesMessage } from "../DataModels/MessageModels"
-import { RoomContent, PlayerContent } from "../DataModels/ContentModels"
+import { ErrorMessage, Message, ArrangedPiecesMessage, 
+instanceOfArrangedPiecesMessage } from "../DataModels/MessageModels"
+import { RoomContent, Status } from "../DataModels/ContentModels"
 
 export const processMessage = (room: RoomContent, message: Message, ws: WebSocket) => {
-    var sourcePlayer : PlayerContent
-    var destinationPlayer : PlayerContent
-
     const player1 = room.player1
     const player2 = room.player2
 
+    var player1IsSource : boolean
+
     if (player1.customWs.id === message.wsId) {
-        sourcePlayer = player1
-        destinationPlayer = player2
+        player1IsSource = true
     } else if (player2.customWs.id === message.wsId) {
-        sourcePlayer = player2
-        destinationPlayer = player1
+        player1IsSource = false
     } else {
 
         //2 players already joined, error out
@@ -29,6 +27,42 @@ export const processMessage = (room: RoomContent, message: Message, ws: WebSocke
     }
 
     if (instanceOfArrangedPiecesMessage(message)) {
-        destinationPlayer.customWs.ws.send(JSON.stringify(message))
-    }
+        var arrangedPiecesMessage = message as ArrangedPiecesMessage
+        room.status = arrangedPiecesMessage.status === Status.Finished ? Status.Finished : room.status
+
+        if (room.status === Status.Setup) {
+            room.status = Status.SetUpMidway
+        } else if (room.status === Status.SetUpMidway) {
+            room.status = Status.WaitingForRed
+        } else if (room.status === Status.WaitingForRed) {
+            room.status = Status.WaitingFoBlue
+        } else if (room.status === Status.WaitingFoBlue) {
+            room.status = Status.WaitingForRed
+        }
+
+        arrangedPiecesMessage.status = room.status;
+        
+        var statusMessage = {
+            roomNumber: arrangedPiecesMessage.roomNumber,
+            name: undefined,
+            color: undefined,
+            wsId: undefined,
+            status: arrangedPiecesMessage.status 
+        }
+
+        if (arrangedPiecesMessage.status === Status.Finished) {
+            console.log("Game over!")
+        }
+        if (player1IsSource) {
+            player2.customWs.ws.send(JSON.stringify(arrangedPiecesMessage))
+            player1.pieces = arrangedPiecesMessage.arrangedPositions
+            player1.customWs.ws.send(JSON.stringify(statusMessage))
+        } else {
+            player1.customWs.ws.send(JSON.stringify(arrangedPiecesMessage))
+            player2.pieces = arrangedPiecesMessage.arrangedPositions
+            player2.customWs.ws.send(JSON.stringify(statusMessage))
+        }
+            
+    }    
 }
+
