@@ -5,7 +5,7 @@ instanceOfErrorMessage, instanceOfInitialMessage, instanceOfStatusMessage, insta
 import { PieceMap, Status, Color } from '../DataModels/ContentModels'
 import { Board } from './Board'
 
-const URL = process.env.REACT_APP_BACKEND_URL || 'ws://localhost:3030/'
+const URL = process.env.REACT_APP_BACKEND_URL
 
 interface LandingPageState {
   name: string,
@@ -38,7 +38,6 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
   ws = new WebSocket(URL)
 
   componentDidMount() {
-    alert(process.env.REACT_APP_BACKEND_URL)
     this.ws.onopen = () => {
       // on connecting, do nothing but log it to the console
       console.log('connected')
