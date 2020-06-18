@@ -1,3 +1,5 @@
+import * as socket from 'socket.io'
+
 export interface PieceContent {
     rank: number,
     index: number,
@@ -6,16 +8,11 @@ export interface PieceContent {
     color: Color
 }
 
-export interface CustomWebSocketContent {
-    ws: WebSocket,
-    id: string
-}
-
 export interface PlayerContent {
     color: Color
     name: string
     pieces: PieceMap
-    customWs: CustomWebSocketContent
+    ws: socket.Socket
 }
 
 export interface RoomContent {

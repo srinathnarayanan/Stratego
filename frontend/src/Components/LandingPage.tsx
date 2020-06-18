@@ -5,6 +5,8 @@ instanceOfErrorMessage, instanceOfInitialMessage, instanceOfStatusMessage, insta
 import { PieceMap, Status, Color } from '../DataModels/ContentModels'
 import { Board } from './Board'
 
+import * as io from 'socket.io-client'
+
 const URL = process.env.REACT_APP_BACKEND_URL
 
 interface LandingPageState {
@@ -14,8 +16,7 @@ interface LandingPageState {
   receivedRoomNumber: string,
   messages: string[],
   playerPieces: PieceMap,
-  ws: WebSocket,
-  wsId: string,
+  ws: SocketIOClient.Socket
   status: Status
 } 
 
@@ -30,22 +31,22 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
       messages: [],
       playerPieces: {},
       ws: undefined,
-      wsId: undefined,
       status: Status.NotStarted
     }
   }
 
-  ws = new WebSocket(URL)
+  ws = io.connect(URL)
 
   componentDidMount() {
-    this.ws.onopen = () => {
+    this.ws.on('connect', () => {
       // on connecting, do nothing but log it to the console
       console.log('connected')
-    }
+    });
 
-    this.ws.onmessage = evt => {
+    this.ws.on('message', evt => {
       // on receiving a message, add it to the list of messages
-      const message = JSON.parse(evt.data)
+      alert(evt)
+      const message = JSON.parse(evt)
       if (!this.state.receivedRoomNumber) {
         if (instanceOfInitialMessage(message)) {
           const initialContent = message as InitialMessage
@@ -53,8 +54,7 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
             receivedRoomNumber: initialContent.roomNumber, 
             playerPieces: initialContent.initialPositions, 
             status: initialContent.status, 
-            color: initialContent.color, 
-            wsId: initialContent.wsId
+            color: initialContent.color
           });
           this.addMessage("Other player has joined the game")
         } else if (instanceOfErrorMessage(message)) {
@@ -83,16 +83,16 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
 
         }
       }
-    }
+    });
 
 
-    this.ws.onclose = () => {
+    this.ws.on('disconnect', () => {
       console.log('disconnected')
       // automatically try to reconnect on connection loss
       this.setState({
-        ws: new WebSocket(URL),
+        ws: io.connect(URL)
       })
-    }
+    })
   }
 
   addMessage = message =>
@@ -100,7 +100,7 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
 
   submitGameStartMessage = () => {
     // on submitting the ChatInput form, send the message, add it to the list and reset the input
-    const message : Message = { name: this.state.name, color: this.state.color, roomNumber: this.state.roomNumber, wsId: this.state.wsId }
+    const message : Message = { name: this.state.name, color: this.state.color, roomNumber: this.state.roomNumber }
     this.ws.send(JSON.stringify(message))
     this.addMessage("joining game ...")
   }
@@ -110,8 +110,7 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
       name: this.state.name, 
       color: this.state.color, 
       arrangedPositions: pieces, 
-      roomNumber: this.state.receivedRoomNumber, 
-      wsId: this.state.wsId,
+      roomNumber: this.state.receivedRoomNumber,
       status: this.state.status,
       logMessage: logMessage 
     }
@@ -124,8 +123,7 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
       name: this.state.name, 
       color: this.state.color, 
       arrangedPositions: pieces, 
-      roomNumber: this.state.receivedRoomNumber, 
-      wsId: this.state.wsId,
+      roomNumber: this.state.receivedRoomNumber,
       status: isFlagTaken ? Status.Finished : this.state.status,
       logMessage: logMessage
     }

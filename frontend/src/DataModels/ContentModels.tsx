@@ -6,24 +6,6 @@ export interface PieceContent {
     color: Color
 }
 
-export interface CustomWebSocketContent {
-    ws: WebSocket,
-    id: string
-}
-
-export interface PlayerContent {
-    color: Color
-    name: string
-    pieces: PieceMap
-    customWs: CustomWebSocketContent
-}
-
-export interface RoomContent {
-    player1: PlayerContent,
-    player2: PlayerContent, 
-    status: Status
-}
-
 export enum Color {
     Red,
     Blue,

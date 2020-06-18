@@ -3,8 +3,7 @@ import { PieceMap, Status, Color } from "./ContentModels"
 export interface Message {
     name: string,
     color: Color,
-    roomNumber: string,
-    wsId: string
+    roomNumber: string
 }
 
 export interface InitialMessage extends Message {

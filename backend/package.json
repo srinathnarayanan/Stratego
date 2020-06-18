@@ -3,7 +3,10 @@
     "start": "node app.js"
   },
   "dependencies": {
+    "@types/socket.io": "^2.1.8",
     "awesome-typescript-loader": "^5.2.1",
+    "http": "0.0.1-security",
+    "socket.io": "^2.3.0",
     "source-map-loader": "^1.0.0",
     "ws": "^6.2.1"
   },
