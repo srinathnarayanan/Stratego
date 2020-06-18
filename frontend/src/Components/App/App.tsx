@@ -1,6 +1,6 @@
 import * as React from 'react'
 import './App.css'
-import Chat from '../Chat'
+import {LandingPage} from '../LandingPage'
 
 export class App extends React.Component {
   render() {
@@ -9,7 +9,7 @@ export class App extends React.Component {
         <header className="App-header">
           <h1 className="App-title">Welcome to Stratego</h1>
         </header>
-        <Chat />
+        <LandingPage />
       </div>
     )
   }

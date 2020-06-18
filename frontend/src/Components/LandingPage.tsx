@@ -1,15 +1,13 @@
 import * as React from 'react'
-import { ChatInput } from './ChatInput'
+import { ChatInput } from './JoinGameButton'
 import { InitialMessage, StatusMessage, ArrangedPiecesMessage, ErrorMessage, Message,
 instanceOfErrorMessage, instanceOfInitialMessage, instanceOfStatusMessage, instanceOfArrangedPiecesMessage } from '../DataModels/MessageModels'
 import { PieceMap, Status, Color } from '../DataModels/ContentModels'
 import { Board } from './Board'
 
-//import ChatMessage from './ChatMessage'
+const URL = process.env.REACT_APP_BACKEND_URL || 'ws://localhost:3030/'
 
-const URL = 'ws://localhost:3030/'
-
-interface ChatState {
+interface LandingPageState {
   name: string,
   color: Color,
   roomNumber: string,
@@ -21,7 +19,7 @@ interface ChatState {
   status: Status
 } 
 
-class Chat extends React.Component<{}, ChatState> {
+export class LandingPage extends React.Component<{}, LandingPageState> {
   constructor(props) {
     super(props);
     this.state = {
@@ -40,6 +38,7 @@ class Chat extends React.Component<{}, ChatState> {
   ws = new WebSocket(URL)
 
   componentDidMount() {
+    alert(process.env.REACT_APP_BACKEND_URL)
     this.ws.onopen = () => {
       // on connecting, do nothing but log it to the console
       console.log('connected')
@@ -190,5 +189,3 @@ class Chat extends React.Component<{}, ChatState> {
     </>
   }
 }
-
-export default Chat
