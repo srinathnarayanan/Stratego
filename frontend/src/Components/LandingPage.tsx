@@ -68,17 +68,15 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
       } else {
         if (instanceOfArrangedPiecesMessage(message)) {
           const arrangedPiecesMessage = message as ArrangedPiecesMessage;
-          var opponentPieces = arrangedPiecesMessage.arrangedPositions
+          var currentPieces = arrangedPiecesMessage.arrangedPositions
           var playerPieces = this.state.playerPieces
           for (var i = 0; i < 10; i ++) {
             for (var j = 0; j < 10; j++) {
                const key = i + "," + j
-          
-               if ((this.state.status < Status.WaitingForRed && !playerPieces[key]) || (this.state.status >= Status.WaitingForRed)) {
-                  playerPieces[key] = opponentPieces[key]
-               } 
+               playerPieces[key] = currentPieces[key]
             }
           }
+
           this.setState({playerPieces: playerPieces, status: arrangedPiecesMessage.status})
           this.addMessage(arrangedPiecesMessage.logMessage)
         } else if (instanceOfStatusMessage(message)) {

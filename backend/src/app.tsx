@@ -67,7 +67,6 @@ io.on('connection', function connection(ws) {
       ws.send(JSON.stringify(initialData));
       sockets[ws.id] = {
         id: ws.id,
-        playerName: player1.name,
         roomNumber: roomNumber
       }
 
@@ -109,7 +108,6 @@ io.on('connection', function connection(ws) {
               ws.send(JSON.stringify(initialData));
               sockets[ws.id] = {
                 id: ws.id,
-                playerName: player2.name,
                 roomNumber: roomNumber
               }
 

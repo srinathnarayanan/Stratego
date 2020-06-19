@@ -24,6 +24,19 @@ export const processMessage = (room: RoomContent, message: Message, ws: socket.S
 
     // If we reach here, it is already a ArrangePiecesMessage
     var arrangedPiecesMessage = message as ArrangedPiecesMessage
+
+    // update source info
+    source.pieces = arrangedPiecesMessage.arrangedPositions
+    source.lastActivityTimeInMs = date.getTime()
+    source.setupCompleted = true
+
+    // update destination info
+    if (room.status === Status.Setup || room.status === Status.SetUpMidway) {
+        destination.pieces = getCombinedPieces(destination, source)
+    } else {
+        destination.pieces = source.pieces;
+    }
+    
     room.status = arrangedPiecesMessage.status === Status.Finished ? Status.Finished : room.status
 
     if (room.status === Status.Setup) {
@@ -37,22 +50,12 @@ export const processMessage = (room: RoomContent, message: Message, ws: socket.S
     }
 
     arrangedPiecesMessage.status = room.status;
-        
+    arrangedPiecesMessage.arrangedPositions = destination.pieces
 
-    if (arrangedPiecesMessage.status === Status.Finished) {
-        console.log("Game over!")
-    }
-    
     // forward info to destnation
-    destination.ws.send(JSON.stringify(arrangedPiecesMessage))
+    destination.ws.send(JSON.stringify(arrangedPiecesMessage))    
     
-    // updte source info
-    source.pieces = arrangedPiecesMessage.arrangedPositions
-    destination.pieces = arrangedPiecesMessage.arrangedPositions
-    source.lastActivityTimeInMs = date.getTime()
-    source.setupCompleted = true
-    
-    //send source status
+    // send status to source
     var statusMessage : StatusMessage = {
         roomNumber: arrangedPiecesMessage.roomNumber,
         name: source.name,
@@ -78,8 +81,6 @@ const reconnect = (room: RoomContent, message: Message, ws: socket.Socket, socke
             source = room.player2
             destination = room.player1
         } else {
-            console.log(message.name + "," + room.player1.name + "," + (room.player1.ws ? room.player1.ws.id : "null"))
-            console.log(message.name + "," + room.player2.name + "," + (room.player2.ws ? room.player2.ws.id : "null"))
 
             //Either new player name is trying to connect, or exisitng player is trying to reconnect
             var errorMessage : ErrorMessage = {
@@ -97,7 +98,6 @@ const reconnect = (room: RoomContent, message: Message, ws: socket.Socket, socke
         // Add new socket to establish reconnect
         sockets[ws.id] = {
             id: ws.id,
-            playerName: source.name,
             roomNumber: room.roomNumber
         }
 
@@ -120,15 +120,7 @@ const reconnect = (room: RoomContent, message: Message, ws: socket.Socket, socke
         // initial data will be combined pieces
         var combinedPieces : PieceMap = {}
         if (room.status === Status.Setup || room.status === Status.SetUpMidway) {
-            for (var i = 0; i< 10; i ++) {
-                for (var j = 0; j < 10; j ++) {
-                    const key = i + "," + j
-                    combinedPieces[key] = source.pieces[key]
-                    if (destination.setupCompleted && !combinedPieces[key]) {
-                        combinedPieces[key] = destination.pieces[key]
-                    }
-                }
-            }
+            combinedPieces = getCombinedPieces(source, destination)
         } else {
             combinedPieces = source.pieces
         }
@@ -155,3 +147,16 @@ export const stringyFyRoom = (room: RoomContent) => {
       console.log("player1:{name:" + player1.name + ",wsid:" + player1.ws.id + ", \npieces:" +  JSON.stringify(player1.pieces) + "},\n player2:" + (player2 ? "{name:" + player2.name + ",wsid:" + player2.ws.id + " \npieces:" +  JSON.stringify(player2.pieces) + "}" : "null") + ", status:" + status);
   }
   
+const getCombinedPieces = (source: PlayerContent, destination: PlayerContent) : PieceMap => {
+    var combinedPieces : PieceMap = {}
+    for (var i = 0; i< 10; i ++) {
+        for (var j = 0; j < 10; j ++) {
+            const key = i + "," + j
+            combinedPieces[key] = source.pieces[key]
+            if (destination.setupCompleted && !combinedPieces[key]) {
+                combinedPieces[key] = destination.pieces[key]
+            }
+        }
+    }
+    return combinedPieces
+}

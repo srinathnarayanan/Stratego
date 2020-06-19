@@ -30,7 +30,6 @@ export interface RoomContent {
 
 export interface SocketContent {
     id: string,
-    playerName: string,
     roomNumber: string
 }
 
