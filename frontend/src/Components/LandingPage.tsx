@@ -16,7 +16,8 @@ interface LandingPageState {
   receivedRoomNumber: string,
   messages: string[],
   playerPieces: PieceMap,
-  ws: SocketIOClient.Socket
+  ws: SocketIOClient.Socket,
+  setupCompleted: boolean,
   status: Status
 } 
 
@@ -31,7 +32,8 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
       messages: [],
       playerPieces: {},
       ws: undefined,
-      status: Status.NotStarted
+      status: Status.NotStarted,
+      setupCompleted: false
     }
   }
 
@@ -45,7 +47,6 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
 
     this.ws.on('message', evt => {
       // on receiving a message, add it to the list of messages
-      alert(evt)
       const message = JSON.parse(evt)
       if (!this.state.receivedRoomNumber) {
         if (instanceOfInitialMessage(message)) {
@@ -54,9 +55,12 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
             receivedRoomNumber: initialContent.roomNumber, 
             playerPieces: initialContent.initialPositions, 
             status: initialContent.status, 
-            color: initialContent.color
+            color: initialContent.color,
+            setupCompleted: initialContent.setupCompleted
           });
-          this.addMessage("Other player has joined the game")
+
+          const subMessage = initialContent.setupCompleted ? "re-joined" : "joined"
+          this.addMessage(Color[initialContent.color] + " " + subMessage+ " the game")
         } else if (instanceOfErrorMessage(message)) {
           const errorContent = message as ErrorMessage
           alert(errorContent.error);
@@ -69,7 +73,7 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
           for (var i = 0; i < 10; i ++) {
             for (var j = 0; j < 10; j++) {
                const key = i + "," + j
-
+          
                if ((this.state.status < Status.WaitingForRed && !playerPieces[key]) || (this.state.status >= Status.WaitingForRed)) {
                   playerPieces[key] = opponentPieces[key]
                } 
@@ -79,7 +83,7 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
           this.addMessage(arrangedPiecesMessage.logMessage)
         } else if (instanceOfStatusMessage(message)) {
           const statusMessage = message as StatusMessage;
-          this.setState({status: statusMessage.status})
+          this.setState({status: statusMessage.status, setupCompleted: statusMessage.setupCompleted})
 
         }
       }
@@ -100,9 +104,13 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
 
   submitGameStartMessage = () => {
     // on submitting the ChatInput form, send the message, add it to the list and reset the input
-    const message : Message = { name: this.state.name, color: this.state.color, roomNumber: this.state.roomNumber }
+    const message : Message = {
+      name: this.state.name, 
+      color: this.state.color, 
+      roomNumber: this.state.roomNumber
+    }
     this.ws.send(JSON.stringify(message))
-    this.addMessage("joining game ...")
+    this.addMessage(this.state.color + " joining game ...")
   }
 
   submitPiecesArrangedMessage = (pieces: PieceMap, logMessage: string) => {
@@ -180,6 +188,7 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
         playerColor={this.state.color} 
         playerPieces={this.state.playerPieces} 
         status={this.state.status} 
+        setupCompleted={this.state.setupCompleted}
         sendMoveMessage={this.submitMoveMessage}
         onClickStartButton={this.submitPiecesArrangedMessage}></Board>
       </div>

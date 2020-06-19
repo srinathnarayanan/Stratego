@@ -1,5 +1,8 @@
 import * as socket from 'socket.io'
 
+export type RoomMap = Record<string, RoomContent>;
+export type SocketMap = Record<string, SocketContent>;
+
 export interface PieceContent {
     rank: number,
     index: number,
@@ -12,13 +15,23 @@ export interface PlayerContent {
     color: Color
     name: string
     pieces: PieceMap
-    ws: socket.Socket
+    ws: socket.Socket,
+    lastActivityTimeInMs: number,
+    setupCompleted: boolean
 }
 
 export interface RoomContent {
     player1: PlayerContent,
     player2: PlayerContent, 
-    status: Status
+    status: Status,
+    prevStatus: Status,
+    roomNumber: string
+}
+
+export interface SocketContent {
+    id: string,
+    playerName: string,
+    roomNumber: string
 }
 
 export enum Color {

@@ -8,11 +8,12 @@ export interface Message {
 
 export interface InitialMessage extends Message {
     initialPositions: PieceMap,
-    status: Status
+    status: Status,
+    setupCompleted: boolean
 }
 
 export function instanceOfInitialMessage(object: any): object is InitialMessage {
-    return 'initialPositions' in object && 'status' in object;
+    return 'initialPositions' in object && 'status' in object ;
 }
 
 export interface ArrangedPiecesMessage extends Message {
@@ -25,13 +26,13 @@ export function instanceOfArrangedPiecesMessage(object: any): object is Arranged
     return 'arrangedPositions' in object && 'status' in object && 'logMessage' in object;
 }
 
-
 export interface StatusMessage extends Message {
-    status: Status
+    status: Status,
+    setupCompleted: boolean
 }
 
 export function instanceOfStatusMessage(object: any): object is StatusMessage {
-    return 'status' in object;
+    return 'status' in object && 'setupCompleted' in object;
 }
 
 export interface ErrorMessage extends Message {

@@ -7,6 +7,7 @@ export interface BoardProps {
   playerColor: Color,
   playerPieces: PieceMap,
   status: Status,
+  setupCompleted: boolean,
   sendMoveMessage: (pieces: PieceMap, logMessage: string, isFlagTaken: boolean) => void,
   onClickStartButton: (pieces: PieceMap, logMessage: string) => void
 }
@@ -15,7 +16,6 @@ export interface BoardState {
   playerPieces: PieceMap,
   focusRowIndex: number,
   focusColumnIndex: number,
-  startButtonClassName: string,
   possibleMoves: string []
 }  
 
@@ -27,7 +27,6 @@ export class Board extends React.Component<BoardProps, BoardState> {
       playerPieces: props.playerPieces,
       focusRowIndex: undefined,
       focusColumnIndex: undefined,
-      startButtonClassName: "Visible",
       possibleMoves: []
     }
   }
@@ -35,6 +34,10 @@ export class Board extends React.Component<BoardProps, BoardState> {
   onClick = (rowIndex: number, columnIndex: number) : void => {
     // on Setup, don't allow moves to invalid rows. Perform swap on valid move
     if (this.props.status === Status.Setup || this.props.status === Status.SetUpMidway) {
+      if (this.props.setupCompleted) {
+        alert("you have to wait for other player to finish setting up")
+        return
+      }
       if ((this.props.playerColor === Color.Red && rowIndex > 3) || (this.props.playerColor === Color.Blue && rowIndex < 6)) {
         alert("you can't move here during setup")
         return
@@ -95,8 +98,10 @@ export class Board extends React.Component<BoardProps, BoardState> {
                     }
                   } 
     } else {
-      if (this.props.status == Status.Finished) {
+      if (this.props.status === Status.Finished) {
         alert("game Over!")
+      } else if (this.props.status === Status.Paused) {
+        alert("game paused, waiting for other player to rejoin!")
       } else {
         alert("you have to wait for other player to " + (this.props.status === Status.NotStarted ? "start" : "move"))
       }
@@ -122,8 +127,7 @@ export class Board extends React.Component<BoardProps, BoardState> {
 
 
   onClickStartButton() : void {
-    this.props.onClickStartButton(this.state.playerPieces, "arranged pieces sent");
-    this.setState({startButtonClassName: "Invisible"})
+    this.props.onClickStartButton(this.state.playerPieces, this.props.playerColor + " sent arranged pieces");
   }
 
   render() {
@@ -135,7 +139,7 @@ export class Board extends React.Component<BoardProps, BoardState> {
         </tbody>
       </table>
       {this.props.status === Status.Setup || Status.SetUpMidway ? 
-      <button className={this.state.startButtonClassName} onClick={() => this.onClickStartButton()}> Start game! </button>: <></>}   
+      <button className={this.props.setupCompleted || this.props.status === Status.NotStarted ? "Invisible" : "Visible"} onClick={() => this.onClickStartButton()}> Start game! </button>: <></>}   
       </div>
       )
   }

@@ -1,19 +1,20 @@
 import * as http from 'http'
 import * as socket from 'socket.io'
 
-import { RoomContent, Status, Color, PlayerContent } from "./DataModels/ContentModels";
+import { Status, Color, PlayerContent, RoomMap, SocketMap } from "./DataModels/ContentModels";
 import { InitialMessage, StatusMessage, Message } from "./DataModels/MessageModels"
 import { initializePieces } from "./GamePlay/Initializer";
 import { processMessage } from "./GamePlay/ProcessMessage";
 
-type RoomMap = Record<string, RoomContent>;
 var rooms : RoomMap = {};
+var sockets : SocketMap = {};
 
 
 console.log("run");
 
 const server = http.createServer()
 const io = socket(server)
+const date = new Date()
 
 const stringyFyRooms = () => {
   console.log("ROOMS:");
@@ -41,13 +42,17 @@ io.on('connection', function connection(ws) {
         name: message.name,
         color: color,
         pieces: initializePieces(color),
-        ws: ws
+        ws: ws,
+        lastActivityTimeInMs: date.getTime(),
+        setupCompleted: false
       }
 
       rooms[roomNumber] = {
         player1: player1,
         player2: undefined,
-        status: Status.NotStarted
+        prevStatus: undefined,
+        status: Status.NotStarted,
+        roomNumber: roomNumber
       };
       
       const initialData : InitialMessage = {
@@ -55,10 +60,16 @@ io.on('connection', function connection(ws) {
         color: player1.color,
         roomNumber: roomNumber,
         initialPositions: player1.pieces,
-        status: Status.NotStarted
+        status: Status.NotStarted,
+        setupCompleted: false
       }
 
       ws.send(JSON.stringify(initialData));
+      sockets[ws.id] = {
+        id: ws.id,
+        playerName: player1.name,
+        roomNumber: roomNumber
+      }
 
     } else {
       if (rooms[roomNumber]) {
@@ -77,10 +88,13 @@ io.on('connection', function connection(ws) {
                 name: message.name,
                 color: color,
                 pieces: initializePieces(color),
-                ws: ws
+                ws: ws,
+                lastActivityTimeInMs: date.getTime(),
+                setupCompleted: false
               }
 
               rooms[roomNumber].player2 = player2 
+              rooms[roomNumber].prevStatus = rooms[roomNumber].status
               rooms[roomNumber].status = Status.Setup;
   
               const initialData : InitialMessage = {
@@ -88,24 +102,31 @@ io.on('connection', function connection(ws) {
                 color: player2.color,        
                 roomNumber: roomNumber,
                 initialPositions: player2.pieces,
-                status: Status.Setup
+                status: Status.Setup,
+                setupCompleted: false
               }
         
               ws.send(JSON.stringify(initialData));
+              sockets[ws.id] = {
+                id: ws.id,
+                playerName: player2.name,
+                roomNumber: roomNumber
+              }
 
               const player1 = rooms[roomNumber].player1;
               const statusMessage : StatusMessage = {
                 name: player1.name,
                 color: player1.color,        
                 roomNumber: roomNumber,
-                status: Status.Setup
+                status: Status.Setup,
+                setupCompleted: player1.setupCompleted
               }
 
               player1.ws.send(JSON.stringify(statusMessage))
           }
         } else {
           console.log("going to process")
-            processMessage(rooms[roomNumber], message, ws)
+            processMessage(rooms[roomNumber], message, ws, sockets)
         }
       } else {
         //invalid room code, error out
@@ -126,16 +147,49 @@ server.listen({port: 3030, listeningListener: () => {
 }})
 
 function removeWebsocket(ws: socket.Socket) {
-  for (var key in rooms) {
-    const player1 = rooms[key].player1;
-    const player2 = rooms[key].player2;
-    if ((player1 && player1.ws.id === ws.id) || (player2 && player2.ws.id === ws.id)) {
-      console.log("ending game " + key);
-      delete rooms[key];
-      break;
+    const socket = sockets[ws.id]
+    if (socket) {
+    const room = rooms[socket.roomNumber]
+
+    // If only one player has joined, delete the game
+    if (room.status === Status.NotStarted) {
+      delete rooms[socket.roomNumber]
+      return
     }
+
+    var source : PlayerContent
+    var destination : PlayerContent
+    if (room.player1 && room.player1.ws && room.player1.ws.id === ws.id) {
+      source = room.player1
+      destination = room.player2
+    } else {
+      source = room.player2
+      destination = room.player1
+    }
+    
+    source.ws = undefined;
+    source.lastActivityTimeInMs = date.getTime()
+    delete sockets[ws.id]
+
+    // if game is not  paused, update prev status 
+    // send Pause status to destination as it exists
+    if (room.status !== Status.Paused) {
+      room.prevStatus = room.status
+      room.status = Status.Paused
+      const statusMessage : StatusMessage = {
+        name: destination.name,
+        color: destination.color,        
+        roomNumber: socket.roomNumber,
+        status: Status.Paused,
+        setupCompleted: destination.setupCompleted
+      }
+  
+      destination.ws.send(JSON.stringify(statusMessage))  
+    }
+    //stringyFyRooms()
+  } else {
+    console.log(ws.id + " not present in sockets")
   }
-  //stringyFyRooms()
 }
 
 function uuidv4() {
