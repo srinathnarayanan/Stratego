@@ -1,11 +1,12 @@
 import * as React from 'react'
+import SideBar from "react-sidebar"
 import { ChatInput } from './JoinGameButton'
-import { InitialMessage, StatusMessage, ArrangedPiecesMessage, ErrorMessage, Message,
-instanceOfErrorMessage, instanceOfInitialMessage, instanceOfStatusMessage, instanceOfArrangedPiecesMessage } from '../DataModels/MessageModels'
-import { PieceMap, Status, Color } from '../DataModels/ContentModels'
+import { InitialMessage, StatusMessage, SetupMessage, ErrorMessage, Message, MoveMessage} from '../DataModels/MessageModels'
+import { PieceMap, Status, Color, MessageTypes, MoveMessageParams, PieceContent } from '../DataModels/ContentModels'
 import { Board } from './Board'
 
 import * as io from 'socket.io-client'
+import { Gallery } from './Gallery'
 
 const URL = process.env.REACT_APP_BACKEND_URL
 
@@ -18,7 +19,9 @@ interface LandingPageState {
   playerPieces: PieceMap,
   ws: SocketIOClient.Socket,
   setupCompleted: boolean,
-  status: Status
+  status: Status,
+  sidebarOpen: boolean,
+  removedPieces: PieceContent[]
 } 
 
 export class LandingPage extends React.Component<{}, LandingPageState> {
@@ -33,8 +36,15 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
       playerPieces: {},
       ws: undefined,
       status: Status.NotStarted,
-      setupCompleted: false
+      setupCompleted: false,
+      sidebarOpen: false,
+      removedPieces: []
     }
+    this.onSetSidebarOpen = this.onSetSidebarOpen.bind(this);
+  }
+
+  onSetSidebarOpen(open) {
+    this.setState({ sidebarOpen: open });
   }
 
   ws = io.connect(URL)
@@ -45,48 +55,72 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
       console.log('connected')
     });
 
-    this.ws.on('message', evt => {
-      // on receiving a message, add it to the list of messages
-      const message = JSON.parse(evt)
-      if (!this.state.receivedRoomNumber) {
-        if (instanceOfInitialMessage(message)) {
-          const initialContent = message as InitialMessage
-          this.setState({
-            receivedRoomNumber: initialContent.roomNumber, 
-            playerPieces: initialContent.initialPositions, 
-            status: initialContent.status, 
-            color: initialContent.color,
-            setupCompleted: initialContent.setupCompleted
-          });
+    this.ws.on(MessageTypes.Join, (data) => {
+      const message = JSON.parse(data)
+      const initialContent = message as InitialMessage
+      this.setState({
+        receivedRoomNumber: initialContent.roomNumber, 
+        playerPieces: initialContent.initialPositions, 
+        status: initialContent.status, 
+        color: initialContent.color,
+        setupCompleted: initialContent.setupCompleted
+      });
 
-          const subMessage = initialContent.setupCompleted ? "re-joined" : "joined"
-          this.addMessage(Color[initialContent.color] + " " + subMessage+ " the game")
-        } else if (instanceOfErrorMessage(message)) {
-          const errorContent = message as ErrorMessage
-          alert(errorContent.error);
-        }
-      } else {
-        if (instanceOfArrangedPiecesMessage(message)) {
-          const arrangedPiecesMessage = message as ArrangedPiecesMessage;
-          var currentPieces = arrangedPiecesMessage.arrangedPositions
-          var playerPieces = this.state.playerPieces
-          for (var i = 0; i < 10; i ++) {
-            for (var j = 0; j < 10; j++) {
-               const key = i + "," + j
-               playerPieces[key] = currentPieces[key]
-            }
-          }
+      const subMessage = initialContent.setupCompleted ? "re-joined" : "joined"
+      this.addMessage("Opponent " + subMessage+ " the game")
+    })
 
-          this.setState({playerPieces: playerPieces, status: arrangedPiecesMessage.status})
-          this.addMessage(arrangedPiecesMessage.logMessage)
-        } else if (instanceOfStatusMessage(message)) {
-          const statusMessage = message as StatusMessage;
-          this.setState({status: statusMessage.status, setupCompleted: statusMessage.setupCompleted})
+    this.ws.on(MessageTypes.Error, (data) => {
+      const message = JSON.parse(data)
+      const errorContent = message as ErrorMessage
+      alert(errorContent.error);
+    })
 
+    this.ws.on(MessageTypes.Setup, (data) => {
+      const message = JSON.parse(data)
+      const arrangedPiecesMessage = message as SetupMessage;
+      var currentPieces = arrangedPiecesMessage.arrangedPositions
+      var playerPieces = this.state.playerPieces
+      for (var i = 0; i < 10; i ++) {
+        for (var j = 0; j < 10; j++) {
+           const key = i + "," + j
+           if (!playerPieces[key]) {
+             playerPieces[key] = currentPieces[key]
+           }
         }
       }
-    });
 
+      this.setState({playerPieces: playerPieces, status: arrangedPiecesMessage.status})
+      this.addMessage(arrangedPiecesMessage.logMessage)
+    })
+
+    this.ws.on(MessageTypes.Move, (data) => {
+      const message = JSON.parse(data)
+      const moveMessage = message as MoveMessage;
+      var currentPieces = moveMessage.arrangedPositions
+      var playerPieces = this.state.playerPieces
+      var removedPieces = this.state.removedPieces
+
+      if (playerPieces[moveMessage.loserKey]) {
+        removedPieces.push(playerPieces[moveMessage.loserKey])
+      }
+
+      for (var i = 0; i < 10; i ++) {
+        for (var j = 0; j < 10; j++) {
+           const key = i + "," + j
+           playerPieces[key] = currentPieces[key]
+        }
+      }
+
+      this.setState({playerPieces: playerPieces, status: moveMessage.status, removedPieces: removedPieces})
+      this.addMessage(moveMessage.logMessage)
+    })
+
+    this.ws.on(MessageTypes.Status, (data) => {
+      const message = JSON.parse(data)
+      const statusMessage = message as StatusMessage;
+      this.setState({status: statusMessage.status, setupCompleted: statusMessage.setupCompleted})
+    })    
 
     this.ws.on('disconnect', () => {
       console.log('disconnected')
@@ -100,19 +134,19 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
   addMessage = message =>
     this.setState(state => ({ messages: [message, ...state.messages] }))
 
-  submitGameStartMessage = () => {
+  submitJoinGameMessage = () => {
     // on submitting the ChatInput form, send the message, add it to the list and reset the input
     const message : Message = {
       name: this.state.name, 
       color: this.state.color, 
       roomNumber: this.state.roomNumber
     }
-    this.ws.send(JSON.stringify(message))
-    this.addMessage(this.state.color + " joining game ...")
+    this.ws.emit(MessageTypes.Join, JSON.stringify(message))
+    this.addMessage("You joined the game")
   }
 
-  submitPiecesArrangedMessage = (pieces: PieceMap, logMessage: string) => {
-    const message : ArrangedPiecesMessage = { 
+  sendSetupMessage = (pieces: PieceMap, logMessage: string) => {
+    const message : SetupMessage = { 
       name: this.state.name, 
       color: this.state.color, 
       arrangedPositions: pieces, 
@@ -120,26 +154,72 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
       status: this.state.status,
       logMessage: logMessage 
     }
-    this.ws.send(JSON.stringify(message))
+    this.ws.emit(MessageTypes.Setup, JSON.stringify(message))
     this.addMessage(logMessage)
   }
 
-  submitMoveMessage = (pieces: PieceMap, logMessage: string, isFlagTaken: boolean) => {
-    const message : ArrangedPiecesMessage = { 
+  sendMoveMessage = (moveMessageParams: MoveMessageParams) => {
+    const message : MoveMessage = { 
       name: this.state.name, 
       color: this.state.color, 
-      arrangedPositions: pieces, 
+      arrangedPositions: moveMessageParams.pieces, 
       roomNumber: this.state.receivedRoomNumber,
-      status: isFlagTaken ? Status.Finished : this.state.status,
-      logMessage: logMessage
+      status: moveMessageParams.isFlagTaken ? Status.Finished : this.state.status,
+      logMessage: moveMessageParams.logMessage,
+      winnerKey: moveMessageParams.winnerKey,
+      loserKey: moveMessageParams.loserKey
     }
-    this.ws.send(JSON.stringify(message))
-    this.addMessage(logMessage)    
+    this.ws.emit(MessageTypes.Move, JSON.stringify(message))
+    this.addMessage(moveMessageParams.logMessage)    
+  }
+
+  addRemovedPieceToGallery = (removedPiece: PieceContent) => {
+    var removedPieces = this.state.removedPieces
+    const targetRank = removedPiece.rank
+    var i = 0;
+    for (; i < removedPieces.length; i ++) {
+      if (removedPieces[i].rank > targetRank) {
+        break
+      }
+    }
+    removedPieces.splice(i, 0, removedPiece)
+    this.setState({removedPieces: removedPieces})
   }
 
   render() {
-    return !this.state.receivedRoomNumber ? (
-      <div>
+    return (
+        <SideBar
+        sidebar={
+          <>
+          <div className="Message">
+            <h2> LOGS </h2>
+              {this.state.messages.map((value : string) => {
+              return <><p> {value} </p><br/></>
+              })}
+          </div>
+          <div className="Gallery">
+            <h2> Gallery </h2>
+            <Gallery removedPieces={this.state.removedPieces}/>
+            </div>
+          </>
+        }
+        open={this.state.sidebarOpen}
+        onSetOpen={this.onSetSidebarOpen}
+        styles={{sidebar: { background: "white" } }}
+        >
+
+        <div className="App-Header">
+          <h1 className="App-title">Welcome to Stratego</h1>
+          {this.state.receivedRoomNumber ? 
+            <div className="Metadata">
+                <h4>roomNumber: <br/>{this.state.receivedRoomNumber}</h4>
+                <h4>status: <br/>{Status[this.state.status]}</h4>
+            </div> : <></>}
+        </div>
+
+
+        {!this.state.receivedRoomNumber ? 
+        <div>
           Name:&nbsp;
           <input
             type="text"
@@ -152,7 +232,7 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
           <div>
         <ChatInput
           name="start a game"
-          onSubmitMessage={() => this.submitGameStartMessage()}
+          onSubmitMessage={() => this.submitJoinGameMessage()}
         />
         Room code:&nbsp;
           <input
@@ -165,31 +245,27 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
           <br/>
           <ChatInput
           name="join existing game"
-          onSubmitMessage={() => this.submitGameStartMessage()}
+          onSubmitMessage={() => this.submitJoinGameMessage()}
          />
 
         </div>
       </div>
-    ) :  
-    <>
-    <div className="Message">
-      {this.state.messages.map((value : string) => {
-        return <><p> {value} </p><br/></>
-      })}
-      </div>
-      <div>
-        <div className="Metadata">
-        roomNumber: <h4>{this.state.receivedRoomNumber}</h4><br/>
-        status: <h4>{Status[this.state.status]}</h4>
-        </div>
+      :  
+      <>
+        <button onClick={() => this.onSetSidebarOpen(true)} className="LogsButton">
+        View logs
+        </button>
+
         <Board 
         playerColor={this.state.color} 
         playerPieces={this.state.playerPieces} 
         status={this.state.status} 
         setupCompleted={this.state.setupCompleted}
-        sendMoveMessage={this.submitMoveMessage}
-        onClickStartButton={this.submitPiecesArrangedMessage}></Board>
-      </div>
-    </>
+        sendMoveMessage={this.sendMoveMessage}
+        addRemovedPieceToGallery={this.addRemovedPieceToGallery}
+        onClickStartButton={this.sendSetupMessage}></Board>
+
+    </>}
+    </SideBar>)
   }
 }

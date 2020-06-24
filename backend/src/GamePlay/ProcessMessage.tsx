@@ -1,18 +1,13 @@
-import { ErrorMessage, Message, ArrangedPiecesMessage, 
-instanceOfArrangedPiecesMessage, 
+import { ErrorMessage, Message, SetupMessage, 
 StatusMessage,
 InitialMessage} from "../DataModels/MessageModels"
-import { RoomContent, Status, PlayerContent, PieceMap, SocketMap } from "../DataModels/ContentModels"
+import { RoomContent, Status, PlayerContent, PieceMap, SocketMap, MessageTypes } from "../DataModels/ContentModels"
 import * as socket from 'socket.io'
 const date = new Date()
 
-export const processMessage = (room: RoomContent, message: Message, ws: socket.Socket, sockets: SocketMap) => {
+export const processMessage = (room: RoomContent, message: SetupMessage, messageType: string, ws: socket.Socket, sockets: SocketMap) => {
     var source : PlayerContent
     var destination : PlayerContent
-
-    if (reconnect(room, message, ws, sockets)) {
-        return;
-    }
 
     if (room.player1.ws.id === ws.id) {
         source = room.player1
@@ -22,22 +17,18 @@ export const processMessage = (room: RoomContent, message: Message, ws: socket.S
         destination = room.player1
     }
 
-    // If we reach here, it is already a ArrangePiecesMessage
-    var arrangedPiecesMessage = message as ArrangedPiecesMessage
-
     // update source info
-    source.pieces = arrangedPiecesMessage.arrangedPositions
+    source.pieces = message.arrangedPositions
     source.lastActivityTimeInMs = date.getTime()
     source.setupCompleted = true
 
-    // update destination info
-    if (room.status === Status.Setup || room.status === Status.SetUpMidway) {
+    if (room.status === Status.Setup) {
         destination.pieces = getCombinedPieces(destination, source)
     } else {
-        destination.pieces = source.pieces;
+        destination.pieces = source.pieces
     }
     
-    room.status = arrangedPiecesMessage.status === Status.Finished ? Status.Finished : room.status
+    room.status = message.status === Status.Finished ? Status.Finished : room.status
 
     if (room.status === Status.Setup) {
         room.status = Status.SetUpMidway
@@ -49,28 +40,24 @@ export const processMessage = (room: RoomContent, message: Message, ws: socket.S
         room.status = Status.WaitingForRed
     }
 
-    arrangedPiecesMessage.status = room.status;
-    arrangedPiecesMessage.arrangedPositions = destination.pieces
+    message.status = room.status;
+    message.arrangedPositions = destination.pieces
 
     // forward info to destnation
-    destination.ws.send(JSON.stringify(arrangedPiecesMessage))    
+    destination.ws.emit(messageType, JSON.stringify(message))    
     
     // send status to source
     var statusMessage : StatusMessage = {
-        roomNumber: arrangedPiecesMessage.roomNumber,
+        roomNumber: message.roomNumber,
         name: source.name,
         color: source.color,
-        status: arrangedPiecesMessage.status,
+        status: message.status,
         setupCompleted: source.setupCompleted
     }
-    source.ws.send(JSON.stringify(statusMessage))
+    source.ws.emit(MessageTypes.Status, JSON.stringify(statusMessage))
 }
 
-const reconnect = (room: RoomContent, message: Message, ws: socket.Socket, sockets: SocketMap) : boolean => {
-    if (instanceOfArrangedPiecesMessage(message)) {
-        return false
-    }
-
+export const reconnect = (room: RoomContent, message: Message, ws: socket.Socket, sockets: SocketMap) : void => {
         var source : PlayerContent
         var destination : PlayerContent
     
@@ -89,8 +76,8 @@ const reconnect = (room: RoomContent, message: Message, ws: socket.Socket, socke
                 roomNumber: undefined,
                 error: "2 players have already joined this game."
             }
-            ws.send(JSON.stringify(errorMessage))
-            return true
+            ws.emit(MessageTypes.Error, JSON.stringify(errorMessage))
+            return
         }    
 
         console.log(source.name + " reconnecting. resending startup data.")
@@ -114,7 +101,7 @@ const reconnect = (room: RoomContent, message: Message, ws: socket.Socket, socke
                 status: room.status,
                 setupCompleted: destination.setupCompleted
             }
-            destination.ws.send(JSON.stringify(statusMessage))
+            destination.ws.emit(MessageTypes.Status, JSON.stringify(statusMessage))
         }
 
         // initial data will be combined pieces
@@ -134,9 +121,7 @@ const reconnect = (room: RoomContent, message: Message, ws: socket.Socket, socke
             setupCompleted: source.setupCompleted
         }
         source.lastActivityTimeInMs = date.getTime()
-        source.ws.send(JSON.stringify(initialData))         
-
-        return true
+        source.ws.emit(MessageTypes.Join, JSON.stringify(initialData))         
 }
 
 export const stringyFyRoom = (room: RoomContent) => {

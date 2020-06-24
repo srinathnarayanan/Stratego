@@ -38,19 +38,26 @@ export const getPossibleMoves = (playerPieces: PieceMap, rowIndex: number, colum
     return possibleMoves
 }
 
-export const resolveRank = (focus: PieceContent, target: PieceContent) : {winner: PieceContent, loser: PieceContent} => {
+export const resolveRank = (focus: PieceContent, focusIndex:string, target: PieceContent, targetIndex: string, addRemovedPieceToGallery: (piece: PieceContent) => void) :
+ {winner: PieceContent, winnerIndex: string, loser: PieceContent, loserIndex: string} => {
     if (!target) {
-        return {winner: focus, loser: target}
+        return {winner: focus, winnerIndex: focusIndex, loser: target, loserIndex: targetIndex}
     } else if (target.name === "Bomb" && focus.name !== "Miner") {
-        return {winner: target, loser: focus}
+        addRemovedPieceToGallery(focus)
+        return {winner: target, winnerIndex: targetIndex, loser: focus, loserIndex: focusIndex}
     } else if (focus.name === "Spy") {
-        return {winner: focus, loser: target}
+        addRemovedPieceToGallery(target)
+        return {winner: focus, winnerIndex: focusIndex, loser: target, loserIndex: targetIndex}
     } else if (focus.rank > target.rank) {
-        return {winner: focus, loser: target}
+        addRemovedPieceToGallery(target)
+        return {winner: focus, winnerIndex: focusIndex, loser: target, loserIndex: targetIndex}
     } else if (focus.rank < target.rank) {
-        return {winner:target, loser: focus}
+        addRemovedPieceToGallery(focus)
+        return {winner:target, winnerIndex: targetIndex, loser: focus, loserIndex: focusIndex}
     } else {
         //both are same rank
+        addRemovedPieceToGallery(focus)
+        addRemovedPieceToGallery(target)
         return undefined
     }
 }

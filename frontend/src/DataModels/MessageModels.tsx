@@ -12,18 +12,15 @@ export interface InitialMessage extends Message {
     setupCompleted: boolean
 }
 
-export function instanceOfInitialMessage(object: any): object is InitialMessage {
-    return 'initialPositions' in object && 'status' in object && 'setupCompleted' in object;
-}
-
-export interface ArrangedPiecesMessage extends Message {
+export interface SetupMessage extends Message {
     logMessage: string,
     arrangedPositions: PieceMap,
     status: Status
 }
 
-export function instanceOfArrangedPiecesMessage(object: any): object is ArrangedPiecesMessage {
-    return 'arrangedPositions' in object && 'status' in object && 'logMessage' in object;
+export interface MoveMessage extends SetupMessage {
+    winnerKey: string,
+    loserKey: string 
 }
 
 export interface StatusMessage extends Message {
@@ -31,14 +28,6 @@ export interface StatusMessage extends Message {
     setupCompleted: boolean
 }
 
-export function instanceOfStatusMessage(object: any): object is StatusMessage {
-    return 'status' in object && 'setupCompleted' in object;
-}
-
 export interface ErrorMessage extends Message {
     error: string
-}
-
-export function instanceOfErrorMessage(object: any): object is ErrorMessage {
-    return 'error' in object;
 }

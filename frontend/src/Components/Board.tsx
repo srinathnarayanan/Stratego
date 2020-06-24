@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { PieceMap, PieceContent, Status, Color } from '../DataModels/ContentModels'
+import { PieceMap, PieceContent, Status, Color, MoveMessageParams } from '../DataModels/ContentModels'
 import { Square } from "./Square"
 import { getPossibleMoves, resolveRank } from "../GamePlay/MovePieces"
 
@@ -8,7 +8,8 @@ export interface BoardProps {
   playerPieces: PieceMap,
   status: Status,
   setupCompleted: boolean,
-  sendMoveMessage: (pieces: PieceMap, logMessage: string, isFlagTaken: boolean) => void,
+  addRemovedPieceToGallery: (removedPiece: PieceContent) => void,
+  sendMoveMessage: (moveMessageParams: MoveMessageParams) => void,
   onClickStartButton: (pieces: PieceMap, logMessage: string) => void
 }
 
@@ -71,29 +72,39 @@ export class Board extends React.Component<BoardProps, BoardState> {
                   } else if (this.state.focusRowIndex === rowIndex && this.state.focusColumnIndex === columnIndex) {
                     this.setState({focusRowIndex: undefined, focusColumnIndex: undefined, possibleMoves: []})
                   } else {
-                    var targetKey = columnIndex + "," + rowIndex
+                    const targetPieceKey = columnIndex + "," + rowIndex
                     const focusPieceKey = this.state.focusColumnIndex + "," + this.state.focusRowIndex
-                    if (this.state.possibleMoves.find(x => x === targetKey)) {
+                    if (this.state.possibleMoves.find(x => x === targetPieceKey)) {
+                      
                       //if present in possible move locations, determine if it is a swap or a compare
                       const playerPieces = this.state.playerPieces
                       const focusPiece = playerPieces[focusPieceKey]
-                      const targetpiece = playerPieces[targetKey]
-                      delete playerPieces[focusPieceKey]
-                      var result = resolveRank(focusPiece, targetpiece)
+                      const targetpiece = playerPieces[targetPieceKey]
+                      
+                      var result = resolveRank(focusPiece, focusPieceKey, targetpiece, targetPieceKey, this.props.addRemovedPieceToGallery)
                       var logMessage: string
+                      
                       if (result) {
                         if (result.loser) {
                           logMessage = result.winner.name + "(" + result.winner.rank + ") beat " + result.loser.name + "(" + result.loser.rank + ")"
                         } else {
-                          logMessage = result.winner.name + " moved to the empty space at " + targetKey
+                          logMessage = Color[result.winner.color] + " moved a piece to the empty space at " + targetPieceKey
                         }
-                        playerPieces[targetKey] = result.winner
+                        playerPieces[targetPieceKey] = result.winner
+                        
                       } else {
                         logMessage = focusPiece.name + "(" + focusPiece.rank + ") and " + targetpiece.name + "(" + targetpiece.rank + ") took each other out"
-                        delete playerPieces[targetKey]
+                        delete playerPieces[targetPieceKey]
                       }
+                      delete playerPieces[focusPieceKey]
+                      
                       this.setState({playerPieces: playerPieces, focusColumnIndex: undefined, focusRowIndex: undefined, possibleMoves: []}) 
-                      this.props.sendMoveMessage(this.state.playerPieces, logMessage, result && result.loser && result.loser.name === "Flag")
+                      this.props.sendMoveMessage({
+                        winnerKey: result?.winnerIndex,
+                        loserKey: result?.loserIndex,
+                        pieces: this.state.playerPieces,
+                        logMessage: logMessage,
+                        isFlagTaken: result && result.loser && result.loser.name === "Flag"})
                     } else {
                     }
                   } 
@@ -127,7 +138,7 @@ export class Board extends React.Component<BoardProps, BoardState> {
 
 
   onClickStartButton() : void {
-    this.props.onClickStartButton(this.state.playerPieces, this.props.playerColor + " sent arranged pieces");
+    this.props.onClickStartButton(this.state.playerPieces, Color[this.props.playerColor] + " sent arranged pieces");
   }
 
   render() {

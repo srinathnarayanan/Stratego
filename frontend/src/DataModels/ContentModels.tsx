@@ -2,7 +2,7 @@ export interface PieceContent {
     rank: number,
     index: number,
     name: string,
-    inPlay: boolean,
+    isVisible: boolean,
     color: Color
 }
 
@@ -20,6 +20,22 @@ export enum Status {
     WaitingFoBlue,
     Paused,
     Finished
+}
+
+export class MessageTypes {
+    static Join = "Join"
+    static Setup = "Setup"
+    static Move = "Move"
+    static Status = "Status"
+    static Error = "Error"
+}
+
+export interface MoveMessageParams {
+    winnerKey: string 
+    loserKey: string
+    logMessage: string
+    pieces: PieceMap
+    isFlagTaken: boolean
 }
 
 export type PieceMap = Record<string, PieceContent>;

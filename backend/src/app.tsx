@@ -1,10 +1,10 @@
 import * as http from 'http'
 import * as socket from 'socket.io'
 
-import { Status, Color, PlayerContent, RoomMap, SocketMap } from "./DataModels/ContentModels";
-import { InitialMessage, StatusMessage, Message } from "./DataModels/MessageModels"
+import { Status, Color, PlayerContent, RoomMap, SocketMap, MessageTypes } from "./DataModels/ContentModels";
+import { InitialMessage, StatusMessage, Message, SetupMessage, MoveMessage } from "./DataModels/MessageModels"
 import { initializePieces } from "./GamePlay/Initializer";
-import { processMessage } from "./GamePlay/ProcessMessage";
+import { processMessage, reconnect } from "./GamePlay/ProcessMessage";
 
 var rooms : RoomMap = {};
 var sockets : SocketMap = {};
@@ -28,7 +28,7 @@ const stringyFyRooms = () => {
 
 
 io.on('connection', function connection(ws) {
-  ws.on('message', function incoming(data) {
+  ws.on(MessageTypes.Join, function incoming(data) {
     data = JSON.parse(data)
     const message = data as Message
     var roomNumber = message.roomNumber
@@ -64,7 +64,7 @@ io.on('connection', function connection(ws) {
         setupCompleted: false
       }
 
-      ws.send(JSON.stringify(initialData));
+      ws.emit(MessageTypes.Join, JSON.stringify(initialData));
       sockets[ws.id] = {
         id: ws.id,
         roomNumber: roomNumber
@@ -77,7 +77,7 @@ io.on('connection', function connection(ws) {
           // only 1 player has connected tll now
             if (rooms[roomNumber].player1.name === message.name) {
               //same name, error out
-              ws.send(JSON.stringify({error: "same name as player1. please change your name."}))              
+              ws.emit(MessageTypes.Error, JSON.stringify({error: "same name as player1. please change your name."}))              
             } else {
               //asign opposite color 
               const color = rooms[roomNumber].player1.color == Color.Blue ? Color.Red : Color.Blue
@@ -105,7 +105,7 @@ io.on('connection', function connection(ws) {
                 setupCompleted: false
               }
         
-              ws.send(JSON.stringify(initialData));
+              ws.emit(MessageTypes.Join, JSON.stringify(initialData));
               sockets[ws.id] = {
                 id: ws.id,
                 roomNumber: roomNumber
@@ -120,19 +120,35 @@ io.on('connection', function connection(ws) {
                 setupCompleted: player1.setupCompleted
               }
 
-              player1.ws.send(JSON.stringify(statusMessage))
+              player1.ws.emit(MessageTypes.Status, JSON.stringify(statusMessage))
           }
         } else {
-          console.log("going to process")
-            processMessage(rooms[roomNumber], message, ws, sockets)
+          console.log("checking for reconnect") 
+          reconnect(rooms[roomNumber], message, ws, sockets)
         }
       } else {
         //invalid room code, error out
-        ws.send(JSON.stringify({error: "room doesn't exist. create the room instead."}))
+        ws.emit(MessageTypes.Error, JSON.stringify({error: "room doesn't exist. create the room instead."}))
       }
     }
   //stringyFyRooms();  
   });
+
+  ws.on(MessageTypes.Setup, function(data) {
+    data = JSON.parse(data)
+    const setupMessage = data as SetupMessage
+    var roomNumber = setupMessage.roomNumber
+    console.log("processing setup message. roomnumber:" + roomNumber + " id:" + ws.id)
+    processMessage(rooms[roomNumber], setupMessage, MessageTypes.Setup, ws, sockets)
+  })
+
+  ws.on(MessageTypes.Move, function(data) {
+    data = JSON.parse(data)
+    const moveMessage = data as MoveMessage
+    var roomNumber = moveMessage.roomNumber
+    console.log("processing move message. roomnumber:" + roomNumber + " id:" + ws.id)
+    processMessage(rooms[roomNumber], moveMessage, MessageTypes.Move, ws, sockets)
+  })
 
   ws.on('disconnect', function close(){
     console.log("connection closed by " + ws.id);
@@ -182,7 +198,7 @@ function removeWebsocket(ws: socket.Socket) {
         setupCompleted: destination.setupCompleted
       }
   
-      destination.ws.send(JSON.stringify(statusMessage))  
+      destination.ws.emit(MessageTypes.Status, JSON.stringify(statusMessage))  
     }
     //stringyFyRooms()
   } else {
@@ -191,9 +207,12 @@ function removeWebsocket(ws: socket.Socket) {
 }
 
 function uuidv4() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
+  var result           = '';
+  var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  var charactersLength = characters.length;
+  for ( var i = 0; i < 4; i++ ) {
+     result += characters.charAt(Math.floor(Math.random() * charactersLength));
+  }
+  return result;
 }
 
