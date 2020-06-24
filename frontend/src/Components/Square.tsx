@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { PieceContent, Color } from "../DataModels/ContentModels"
+import { timeStamp } from 'console'
 
 interface SquareProps {
     rowIndex: number
@@ -35,7 +36,7 @@ export class Square extends React.Component<SquareProps> {
         const focusClassName = this.getFocusClassName();
         var imageName: string
         if (this.props.piece) {
-            if (this.props.piece.color === this.props.playerColor) {
+            if (this.props.piece.color === this.props.playerColor || this.props.piece.inPlay) {
                 imageName = this.props.piece.name + Color[this.props.piece.color]
             } else if (this.props.piece.color === Color.Water) {
                 imageName = this.props.piece.name

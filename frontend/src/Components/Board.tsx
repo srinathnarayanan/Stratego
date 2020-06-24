@@ -2,6 +2,9 @@ import * as React from 'react'
 import { PieceMap, PieceContent, Status, Color, MoveMessageParams } from '../DataModels/ContentModels'
 import { Square } from "./Square"
 import { getPossibleMoves, resolveRank } from "../GamePlay/MovePieces"
+import { target } from 'webpack.config'
+
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 export interface BoardProps {
   playerColor: Color,
@@ -32,7 +35,7 @@ export class Board extends React.Component<BoardProps, BoardState> {
     }
   }
 
-  onClick = (rowIndex: number, columnIndex: number) : void => {
+  onClick = async (rowIndex: number, columnIndex: number) : Promise<void> => {
     // on Setup, don't allow moves to invalid rows. Perform swap on valid move
     if (this.props.status === Status.Setup || this.props.status === Status.SetUpMidway) {
       if (this.props.setupCompleted) {
@@ -75,13 +78,20 @@ export class Board extends React.Component<BoardProps, BoardState> {
                     const targetPieceKey = columnIndex + "," + rowIndex
                     const focusPieceKey = this.state.focusColumnIndex + "," + this.state.focusRowIndex
                     if (this.state.possibleMoves.find(x => x === targetPieceKey)) {
-                      
+
                       //if present in possible move locations, determine if it is a swap or a compare
                       const playerPieces = this.state.playerPieces
                       const focusPiece = playerPieces[focusPieceKey]
-                      const targetpiece = playerPieces[targetPieceKey]
-                      
-                      var result = resolveRank(focusPiece, focusPieceKey, targetpiece, targetPieceKey, this.props.addRemovedPieceToGallery)
+                      const targetPiece = playerPieces[targetPieceKey]
+
+                      if (targetPiece) {
+                        playerPieces[targetPieceKey].inPlay = true
+                        this.setState({playerPieces: playerPieces})
+                        this.forceUpdate()
+                        await sleep(1000)
+                      }
+                                            
+                      var result = resolveRank(focusPiece, focusPieceKey, targetPiece, targetPieceKey, this.props.addRemovedPieceToGallery)
                       var logMessage: string
                       
                       if (result) {
@@ -90,21 +100,25 @@ export class Board extends React.Component<BoardProps, BoardState> {
                         } else {
                           logMessage = Color[result.winner.color] + " moved a piece to the empty space at " + targetPieceKey
                         }
-                        playerPieces[targetPieceKey] = result.winner
                         
+                        playerPieces[targetPieceKey] = result.winner
+                        playerPieces[targetPieceKey].inPlay = false
                       } else {
-                        logMessage = focusPiece.name + "(" + focusPiece.rank + ") and " + targetpiece.name + "(" + targetpiece.rank + ") took each other out"
+                        logMessage = focusPiece.name + "(" + focusPiece.rank + ") and " + targetPiece.name + "(" + targetPiece.rank + ") took each other out"
                         delete playerPieces[targetPieceKey]
                       }
                       delete playerPieces[focusPieceKey]
-                      
-                      this.setState({playerPieces: playerPieces, focusColumnIndex: undefined, focusRowIndex: undefined, possibleMoves: []}) 
+
+                      this.setState({playerPieces: playerPieces, focusColumnIndex: undefined, focusRowIndex: undefined, possibleMoves: []})
+                      this.forceUpdate()
+
                       this.props.sendMoveMessage({
                         winnerKey: result?.winnerIndex,
                         loserKey: result?.loserIndex,
                         pieces: this.state.playerPieces,
                         logMessage: logMessage,
                         isFlagTaken: result && result.loser && result.loser.name === "Flag"})
+                      
                     } else {
                     }
                   } 
@@ -131,7 +145,7 @@ export class Board extends React.Component<BoardProps, BoardState> {
         possibleMoves={this.state.possibleMoves}
         playerColor={this.props.playerColor}
         key={i} 
-        onClick={(columnIndex: number) => this.onClick(rowIndex, columnIndex)}/>)
+        onClick={async (columnIndex: number) => await this.onClick(rowIndex, columnIndex)}/>)
     }
     return rows;
   }
@@ -142,6 +156,7 @@ export class Board extends React.Component<BoardProps, BoardState> {
   }
 
   render() {
+    console.log(JSON.stringify(this.state.playerPieces))
     return( 
       <div className="Board">
       <table className="center">

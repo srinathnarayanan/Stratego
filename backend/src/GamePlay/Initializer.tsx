@@ -39,7 +39,7 @@ const addPieces = (params: addPiecesParams) : [number, number] => {
         rank: params.rank,
         index: i,
         name: params.name,
-        inPlay: true,
+        inPlay: false,
         color: params.color
       }
       params.prevCoordinates = newCoordinates
@@ -59,6 +59,6 @@ const addDeadZones = (pieces: PieceMap) => {
   const deadZoneCoordinates = ["2,4", "3,4", "2,5",  "3,5", "6,4", "7,4", "6,5", "7,5",]
   for (var i = 0; i < 8; i++) {
     const imageIndex : number = i % 4
-    pieces[deadZoneCoordinates[i]] = {rank: -1, index: i, name: "Water" + imageIndex.toString(), inPlay: true, color: Color.Water}
+    pieces[deadZoneCoordinates[i]] = {rank: -1, index: i, name: "Water" + imageIndex.toString(), inPlay: false, color: Color.Water}
   }
 }

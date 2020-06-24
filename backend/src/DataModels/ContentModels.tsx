@@ -7,7 +7,7 @@ export interface PieceContent {
     rank: number,
     index: number,
     name: string,
-    isVisible: boolean,
+    inPlay: boolean,
     color: Color
 }
 
