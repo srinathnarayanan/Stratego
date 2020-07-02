@@ -1,6 +1,5 @@
 import * as React from 'react'
 import { PieceContent, Color } from "../DataModels/ContentModels"
-import { timeStamp } from 'console'
 
 interface SquareProps {
     rowIndex: number
