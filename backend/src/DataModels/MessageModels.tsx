@@ -20,7 +20,7 @@ export interface SetupMessage extends Message {
 
 export interface MoveMessage extends SetupMessage {
     winnerKey: string,
-    loserKey: string 
+    loserKey: string[] 
 }
 
 export interface StatusMessage extends Message {

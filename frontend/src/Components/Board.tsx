@@ -112,9 +112,10 @@ export class Board extends React.Component<BoardProps, BoardState> {
                       this.setState({playerPieces: playerPieces, focusColumnIndex: undefined, focusRowIndex: undefined, possibleMoves: []})
                       this.forceUpdate()
 
+                      // if a piece takes out equally ranked piece, send both in index
                       this.props.sendMoveMessage({
                         winnerKey: result?.winnerIndex,
-                        loserKey: result?.loserIndex,
+                        loserKey: result != undefined ? [result.loserIndex] : [targetPieceKey, focusPieceKey],
                         pieces: this.state.playerPieces,
                         logMessage: logMessage,
                         isFlagTaken: result && result.loser && result.loser.name === "Flag"})
@@ -156,7 +157,6 @@ export class Board extends React.Component<BoardProps, BoardState> {
   }
 
   render() {
-    console.log(JSON.stringify(this.state.playerPieces))
     return( 
       <div className="Board">
       <table className="center">

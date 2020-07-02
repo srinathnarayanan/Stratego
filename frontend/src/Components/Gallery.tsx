@@ -12,15 +12,36 @@ export class Gallery extends React.Component<GalleryProps> {
   }
 
   getImages () : JSX.Element[][] {
+    var rows: JSX.Element[][][] = []
     var result: JSX.Element[][] = []
-    result[0] = [<></>]
-    result[1] = [<></>]
+
+    rows[0] = [[]]
+    rows[1] = [[]]
+    result[0] = []
+    result[1] = []
+
     for (var i = 0; i < this.props.removedPieces.length; i++) {   
         const piece = this.props.removedPieces[i]
         const imageName = piece.name + Color[piece.color]
-        const imagePath = "/images/" + imageName + ".jpg" 
-        result[piece.color].push(<td><img src={imagePath}/></td>)
+        const imagePath = "/images/" + imageName + ".jpg"
+        const image = <td><img src={imagePath}/></td>
+        const coloredRow = rows[piece.color]
+
+        // creating rows of 10 for each color
+        if (coloredRow[coloredRow.length - 1].length === 10) {
+          coloredRow.push([image])
+        } else {
+          coloredRow[coloredRow.length - 1].push(image)
+        }
     }
+
+    for (var colorIndex = 0; colorIndex <= 1; colorIndex++ ) {
+      for (var rowIndex = 0; rowIndex < rows[colorIndex].length; rowIndex++) {
+          var rowName = rowIndex == 0 ? <td rowSpan={rows[colorIndex].length}>{Color[colorIndex]}</td> : <></>
+          result[colorIndex].push(<tr>{rowName}{rows[colorIndex][rowIndex]}</tr>)
+      }
+    }
+    
     return result
   }
 
@@ -29,13 +50,9 @@ export class Gallery extends React.Component<GalleryProps> {
       return (     
         <table>
          <tbody>
-           <tr>
-            <td>RED</td>{images[0]}
-           </tr>  
-            <tr>
-             <td>BLUE</td>{images[1]}
-            </tr>
-         </tbody>
-        </table>)
+           {images}
+        </tbody>
+        </table>
+        )
   }
 }

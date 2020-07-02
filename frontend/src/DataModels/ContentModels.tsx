@@ -32,7 +32,7 @@ export class MessageTypes {
 
 export interface MoveMessageParams {
     winnerKey: string 
-    loserKey: string
+    loserKey: string[]
     logMessage: string
     pieces: PieceMap
     isFlagTaken: boolean

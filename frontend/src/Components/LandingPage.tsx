@@ -101,8 +101,10 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
       var playerPieces = this.state.playerPieces
       var removedPieces = this.state.removedPieces
 
-      if (playerPieces[moveMessage.loserKey]) {
-        removedPieces.push(playerPieces[moveMessage.loserKey])
+      for (var i = 0; i < moveMessage.loserKey.length; i++) {
+        if (playerPieces[moveMessage.loserKey[i]]) {
+          this.addRemovedPieceToGallery(playerPieces[moveMessage.loserKey[i]])
+        }
       }
 
       for (var i = 0; i < 10; i ++) {
