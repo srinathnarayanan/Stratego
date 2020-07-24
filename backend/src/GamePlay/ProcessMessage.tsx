@@ -6,6 +6,11 @@ import * as socket from 'socket.io'
 const date = new Date()
 
 export const processMessage = (room: RoomContent, message: SetupMessage, messageType: string, ws: socket.Socket, sockets: SocketMap) => {
+
+    if (! (room.player1.ws && room.player2.ws)) {
+        return
+    }
+
     var source : PlayerContent
     var destination : PlayerContent
 

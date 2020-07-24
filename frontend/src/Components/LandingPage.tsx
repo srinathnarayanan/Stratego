@@ -9,6 +9,7 @@ import * as io from 'socket.io-client'
 import { Gallery } from './Gallery'
 
 const URL = process.env.REACT_APP_BACKEND_URL
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 interface LandingPageState {
   name: string,
@@ -21,7 +22,9 @@ interface LandingPageState {
   setupCompleted: boolean,
   status: Status,
   sidebarOpen: boolean,
-  removedPieces: PieceContent[]
+  removedPieces: PieceContent[],
+  opponentMoveFrom: string,
+  opponentMoveTo: string,
 } 
 
 export class LandingPage extends React.Component<{}, LandingPageState> {
@@ -38,7 +41,9 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
       status: Status.NotStarted,
       setupCompleted: false,
       sidebarOpen: false,
-      removedPieces: []
+      removedPieces: [],
+      opponentMoveFrom: undefined,
+      opponentMoveTo: undefined,    
     }
     this.onSetSidebarOpen = this.onSetSidebarOpen.bind(this);
   }
@@ -94,7 +99,7 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
       this.addMessage(arrangedPiecesMessage.logMessage)
     })
 
-    this.ws.on(MessageTypes.Move, (data) => {
+    this.ws.on(MessageTypes.Move, async (data) => {
       const message = JSON.parse(data)
       const moveMessage = message as MoveMessage;
       var currentPieces = moveMessage.arrangedPositions
@@ -107,6 +112,11 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
         }
       }
 
+      const moveKeys = this.processMove(playerPieces, moveMessage.winnerKey, moveMessage.loserKey)
+      this.setState({playerPieces: playerPieces, opponentMoveFrom: moveKeys[0], opponentMoveTo: moveKeys[1]})
+      this.forceUpdate()
+      await sleep(2000)
+
       for (var i = 0; i < 10; i ++) {
         for (var j = 0; j < 10; j++) {
            const key = i + "," + j
@@ -114,7 +124,13 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
         }
       }
 
-      this.setState({playerPieces: playerPieces, status: moveMessage.status, removedPieces: removedPieces})
+      this.setState({playerPieces: playerPieces, status: moveMessage.status, removedPieces: removedPieces,
+      opponentMoveTo:undefined, opponentMoveFrom: undefined})
+      await sleep(2000)
+      this.resetInPlay(playerPieces, moveMessage.winnerKey, moveMessage.loserKey)
+      this.setState({playerPieces: playerPieces})
+      this.forceUpdate()
+      
       this.addMessage(moveMessage.logMessage)
     })
 
@@ -133,6 +149,25 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
     })
   }
 
+  processMove = (playerPieces: PieceMap, winnerKey: string, loserKey: string[]) : string[] => {
+    if (loserKey.length == 2) {
+      playerPieces[loserKey[0]].inPlay = true
+      playerPieces[loserKey[1]].inPlay = true
+      return loserKey
+    } 
+    if (playerPieces[loserKey[0]] && playerPieces[winnerKey]) {
+      playerPieces[loserKey[0]].inPlay = true
+      playerPieces[winnerKey].inPlay = true
+    }
+    return [loserKey[0], winnerKey]
+  }
+
+  resetInPlay = (playerPieces: PieceMap, winnerKey: string, loserKey: string[]) : void => {
+    if (loserKey.length == 1) {
+      playerPieces[loserKey[0]].inPlay = false
+    }
+  }
+  
   addMessage = message =>
     this.setState(state => ({ messages: [message, ...state.messages] }))
 
@@ -260,6 +295,8 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
 
         <Board 
         playerColor={this.state.color} 
+        opponentMoveFrom={this.state.opponentMoveFrom}
+        opponentMoveTo={this.state.opponentMoveTo}      
         playerPieces={this.state.playerPieces} 
         status={this.state.status} 
         setupCompleted={this.state.setupCompleted}

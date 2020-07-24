@@ -2,9 +2,11 @@ import * as React from 'react'
 import { PieceContent, Color } from "../DataModels/ContentModels"
 
 interface SquareProps {
-    rowIndex: number
-    columnIndex: number
-    piece: PieceContent
+    rowIndex: number,
+    opponentMoveFrom: string,
+    opponentMoveTo: string,
+    columnIndex: number,
+    piece: PieceContent,
     onClick: () => void,
     focusRowIndex: number,
     focusColumnIndex: number,
@@ -15,10 +17,13 @@ interface SquareProps {
 export class Square extends React.Component<SquareProps> {
   
     getFocusClassName() : string {
+        const squareIndex = this.props.columnIndex + "," + this.props.rowIndex
         if (this.props.focusRowIndex === this.props.rowIndex && this.props.focusColumnIndex === this.props.columnIndex) {
             return "Focussed"
-        } else if (this.props.possibleMoves.find(x => x === (this.props.columnIndex + "," + this.props.rowIndex))) {
-            return this.props.playerColor === Color.Red ? "SemiFocussedRed" : "SemiFocussedBlue"
+        } else if (this.props.possibleMoves.find(x => x === (squareIndex))) {
+            return "SemiFocussed" + Color[this.props.playerColor]
+        } else if (squareIndex === this.props.opponentMoveFrom || squareIndex === this.props.opponentMoveTo) {
+            return "Focussed"
         } else {
             return "NotFocussed"
         }

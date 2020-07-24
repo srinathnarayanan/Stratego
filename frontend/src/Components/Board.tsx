@@ -11,6 +11,8 @@ export interface BoardProps {
   playerPieces: PieceMap,
   status: Status,
   setupCompleted: boolean,
+  opponentMoveFrom: string,
+  opponentMoveTo: string,
   addRemovedPieceToGallery: (removedPiece: PieceContent) => void,
   sendMoveMessage: (moveMessageParams: MoveMessageParams) => void,
   onClickStartButton: (pieces: PieceMap, logMessage: string) => void
@@ -140,6 +142,8 @@ export class Board extends React.Component<BoardProps, BoardState> {
       const rowIndex = i;
       rows.push(<BoardRow 
         rowIndex={i} 
+        opponentMoveFrom={this.props.opponentMoveFrom}
+        opponentMoveTo={this.props.opponentMoveTo}
         focusRowIndex={this.state.focusRowIndex}
         focusColumnIndex={this.state.focusColumnIndex}
         playerPieces={this.state.playerPieces} 
@@ -173,6 +177,8 @@ export class Board extends React.Component<BoardProps, BoardState> {
 
 interface BoardRowProps {
   rowIndex: number
+  opponentMoveFrom: string,
+  opponentMoveTo: string,
   playerPieces: PieceMap,
   onClick: (columnIndex: number) => void,
   focusRowIndex: number,
@@ -206,6 +212,8 @@ class BoardRow extends React.Component<BoardRowProps, BoardRowState> {
       const columnIndex = i;
       squares.push(<Square key={key} 
         rowIndex={this.props.rowIndex}
+        opponentMoveFrom={this.props.opponentMoveFrom}
+        opponentMoveTo={this.props.opponentMoveTo}
         columnIndex={columnIndex} 
         focusRowIndex={this.props.focusRowIndex}
         focusColumnIndex={this.props.focusColumnIndex}
