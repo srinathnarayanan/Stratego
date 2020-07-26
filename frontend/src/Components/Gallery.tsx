@@ -37,8 +37,10 @@ export class Gallery extends React.Component<GalleryProps> {
 
     for (var colorIndex = 0; colorIndex <= 1; colorIndex++ ) {
       for (var rowIndex = 0; rowIndex < rows[colorIndex].length; rowIndex++) {
-          var rowName = rowIndex == 0 ? <td rowSpan={rows[colorIndex].length}>{Color[colorIndex]}</td> : <></>
-          result[colorIndex].push(<tr>{rowName}{rows[colorIndex][rowIndex]}</tr>)
+        const trKey = colorIndex + "," + rowIndex
+        const tdKey = trKey + "," + rows[colorIndex][rowIndex].length
+        var rowName = rowIndex == 0 ? <td key={tdKey} rowSpan={rows[colorIndex].length}>{Color[colorIndex]}</td> : <></>
+        result[colorIndex].push(<tr key={trKey} >{rowName}{rows[colorIndex][rowIndex]}</tr>)
       }
     }
     

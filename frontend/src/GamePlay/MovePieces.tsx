@@ -1,4 +1,4 @@
-import { Status, PieceMap, PieceContent, Color } from "../DataModels/ContentModels"
+import { Status, PieceMap, PieceContent, Color, Result } from "../DataModels/ContentModels"
   
 export const getPossibleMoves = (playerPieces: PieceMap, rowIndex: number, columnIndex: number, playerColor: Color) : string[] => {
     var possibleMoves : string[]
@@ -39,7 +39,7 @@ export const getPossibleMoves = (playerPieces: PieceMap, rowIndex: number, colum
 }
 
 export const resolveRank = (focus: PieceContent, focusIndex:string, target: PieceContent, targetIndex: string, addRemovedPieceToGallery: (piece: PieceContent) => void) :
- {winner: PieceContent, winnerIndex: string, loser: PieceContent, loserIndex: string} => {
+Result => {
     if (!target) {
         return {winner: focus, winnerIndex: focusIndex, loser: target, loserIndex: targetIndex}
     } else if (target.name === "Bomb" && focus.name !== "Miner") {

@@ -9,7 +9,8 @@ export interface Message {
 export interface InitialMessage extends Message {
     initialPositions: PieceMap,
     status: Status,
-    setupCompleted: boolean
+    setupCompleted: boolean,
+    opponentName: string
 }
 
 export interface SetupMessage extends Message {
@@ -25,7 +26,8 @@ export interface MoveMessage extends SetupMessage {
 
 export interface StatusMessage extends Message {
     status: Status,
-    setupCompleted: boolean
+    setupCompleted: boolean,
+    opponentName: string
 }
 
 export interface ErrorMessage extends Message {

@@ -57,7 +57,8 @@ export const processMessage = (room: RoomContent, message: SetupMessage, message
         name: source.name,
         color: source.color,
         status: message.status,
-        setupCompleted: source.setupCompleted
+        setupCompleted: source.setupCompleted,
+        opponentName: destination.name
     }
     source.ws.emit(MessageTypes.Status, JSON.stringify(statusMessage))
 }
@@ -104,7 +105,8 @@ export const reconnect = (room: RoomContent, message: Message, ws: socket.Socket
                 color: destination.color,
                 roomNumber: room.roomNumber,
                 status: room.status,
-                setupCompleted: destination.setupCompleted
+                setupCompleted: destination.setupCompleted,
+                opponentName: source.name
             }
             destination.ws.emit(MessageTypes.Status, JSON.stringify(statusMessage))
         }
@@ -123,7 +125,8 @@ export const reconnect = (room: RoomContent, message: Message, ws: socket.Socket
             roomNumber: room.roomNumber,
             initialPositions: combinedPieces,
             status: room.status,
-            setupCompleted: source.setupCompleted
+            setupCompleted: source.setupCompleted,
+            opponentName: destination.name
         }
         source.lastActivityTimeInMs = date.getTime()
         source.ws.emit(MessageTypes.Join, JSON.stringify(initialData))         

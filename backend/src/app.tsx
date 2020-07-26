@@ -61,7 +61,8 @@ io.on('connection', function connection(ws) {
         roomNumber: roomNumber,
         initialPositions: player1.pieces,
         status: Status.NotStarted,
-        setupCompleted: false
+        setupCompleted: false,
+        opponentName: undefined
       }
 
       ws.emit(MessageTypes.Join, JSON.stringify(initialData));
@@ -95,14 +96,16 @@ io.on('connection', function connection(ws) {
               rooms[roomNumber].player2 = player2 
               rooms[roomNumber].prevStatus = rooms[roomNumber].status
               rooms[roomNumber].status = Status.Setup;
-  
+              const player1 = rooms[roomNumber].player1;
+
               const initialData : InitialMessage = {
                 name: player2.name,
                 color: player2.color,        
                 roomNumber: roomNumber,
                 initialPositions: player2.pieces,
                 status: Status.Setup,
-                setupCompleted: false
+                setupCompleted: false,
+                opponentName: player1.name
               }
         
               ws.emit(MessageTypes.Join, JSON.stringify(initialData));
@@ -111,13 +114,13 @@ io.on('connection', function connection(ws) {
                 roomNumber: roomNumber
               }
 
-              const player1 = rooms[roomNumber].player1;
               const statusMessage : StatusMessage = {
                 name: player1.name,
                 color: player1.color,        
                 roomNumber: roomNumber,
                 status: Status.Setup,
-                setupCompleted: player1.setupCompleted
+                setupCompleted: player1.setupCompleted,
+                opponentName: player2.name
               }
 
               player1.ws.emit(MessageTypes.Status, JSON.stringify(statusMessage))
@@ -195,7 +198,8 @@ function removeWebsocket(ws: socket.Socket) {
         color: destination.color,        
         roomNumber: socket.roomNumber,
         status: Status.Paused,
-        setupCompleted: destination.setupCompleted
+        setupCompleted: destination.setupCompleted,
+        opponentName: source.name
       }
   
       destination.ws.emit(MessageTypes.Status, JSON.stringify(statusMessage))  
