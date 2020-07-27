@@ -7,10 +7,9 @@ import { Board } from './Board'
 
 import * as io from 'socket.io-client'
 import { Gallery } from './Gallery'
-import { LogMessageComponent, LogMessageComponentProps, JoinLogMessageProps } from './LogMessage'
+import { LogMessageComponent, LogMessageComponentProps } from './LogMessage'
 
 const URL = process.env.REACT_APP_BACKEND_URL
-const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 interface LandingPageState {
   name: string,
@@ -25,6 +24,7 @@ interface LandingPageState {
   sidebarOpen: boolean,
   removedPieces: PieceContent[],
   opponentName: string,
+  opponentColor: Color,
   opponentMoveFrom: string,
   opponentMoveTo: string,
   winnerKey: string,
@@ -55,6 +55,7 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
       loserKey: undefined,
       statusAfterMove: undefined,
       moveStatus: MoveStatus.NotMoved,
+      opponentColor: undefined
     }
     this.onSetSidebarOpen = this.onSetSidebarOpen.bind(this);
   }
@@ -80,14 +81,15 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
         status: initialContent.status, 
         color: initialContent.color,
         setupCompleted: initialContent.setupCompleted,
-        opponentName: initialContent.opponentName
+        opponentName: initialContent.opponentName,
+        opponentColor: initialContent.color === Color.Red ? Color.Blue : Color.Red
       });
 
       if (initialContent.opponentName) {
         this.addMessage({
           setupCompleted: initialContent.setupCompleted,
           name: initialContent.opponentName,
-          color: initialContent.color === Color.Red ? Color.Blue : Color.Red,
+          color: this.state.opponentColor,
           type:LogMessageType.Join
         })  
       } 
@@ -95,7 +97,7 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
         setupCompleted: initialContent.setupCompleted,
         name: initialContent.name,
         color: initialContent.color,
-        type:LogMessageType.Join
+        type: LogMessageType.Join
       })
     })
 
@@ -120,7 +122,12 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
       }
 
       this.setState({playerPieces: playerPieces, status: arrangedPiecesMessage.status})
-      //this.addMessage(arrangedPiecesMessage.name + " finished setup.")
+      this.addMessage({
+        type: LogMessageType.Setup,
+        setupCompleted: true,
+        name: this.state.opponentName,
+        color: this.state.opponentColor      
+      })
     })
 
     this.ws.on(MessageTypes.Move, async (data: any) => {
@@ -143,10 +150,26 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
       const message = JSON.parse(data)
       const statusMessage = message as StatusMessage;
       if (!this.state.opponentName) {
+        this.setState({opponentColor: this.state.color === Color.Red ? Color.Blue : Color.Red})
         this.addMessage({
           setupCompleted: statusMessage.setupCompleted,
           name: statusMessage.opponentName,
-          color: this.state.color === Color.Red ? Color.Blue : Color.Red,
+          color: this.state.opponentColor,
+          type:LogMessageType.Join
+        })  
+      }
+      if (statusMessage.status === Status.Paused) {
+        this.addMessage({
+          setupCompleted: statusMessage.setupCompleted,
+          name: statusMessage.opponentName,
+          color: this.state.opponentColor,
+          type:LogMessageType.Leave
+        })
+      } else if (this.state.status === Status.Paused) {
+        this.addMessage({
+          setupCompleted: statusMessage.setupCompleted,
+          name: statusMessage.opponentName,
+          color: this.state.opponentColor,
           type:LogMessageType.Join
         })  
       }
@@ -226,7 +249,6 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
       roomNumber: this.state.roomNumber
     }
     this.ws.emit(MessageTypes.Join, JSON.stringify(message))
-    //this.addMessage(this.state.name + " joined the game")
   }
 
   sendSetupMessage = (pieces: PieceMap) => {
@@ -238,7 +260,12 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
       status: this.state.status,
     }
     this.ws.emit(MessageTypes.Setup, JSON.stringify(message))
-    //this.addMessage(this.state.name + " finsihed setup.")
+    this.addMessage({
+      type: LogMessageType.Setup,
+      setupCompleted: true,
+      name: this.state.name,
+      color: this.state.color      
+    })
   }
 
   sendMoveMessage = (moveMessageParams: MoveMessageParams) => {
@@ -277,7 +304,7 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
           <>
           <div className="Message">
             <h2> LOGS </h2>
-              {this.state.messages.map((props : JoinLogMessageProps) => {
+              {this.state.messages.map((props : LogMessageComponentProps) => {
               return <><LogMessageComponent key={(new Date()).toString()} {...props}/><br/></>
               })}
           </div>

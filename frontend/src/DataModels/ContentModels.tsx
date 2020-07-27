@@ -43,7 +43,6 @@ export enum LogMessageType {
     Attack,
     AttackWin,
     TakeOut,
-    Error
 }
 
 export interface MoveMessageParams {

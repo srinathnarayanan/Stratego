@@ -3,8 +3,6 @@ import { PieceMap, PieceContent, Status, Color, MoveMessageParams, MoveStatus, R
 import { Square } from "./Square"
 import { getPossibleMoves, resolveRank } from "../GamePlay/MovePieces"
 
-const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
-
 export interface BoardProps {
   playerColor: Color,
   playerPieces: PieceMap,

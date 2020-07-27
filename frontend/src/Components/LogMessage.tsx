@@ -7,14 +7,20 @@ export interface AttackLogMessageProps {
   target: PieceContent
 }
 
-export interface JoinLogMessageProps {
+export interface ConnectLogMessageProps {
   type: LogMessageType,
   setupCompleted: boolean,
   name: string,
   color: Color
 }
 
-export type LogMessageComponentProps = AttackLogMessageProps | JoinLogMessageProps
+export interface MoveToEmptySpaceLogMessageProps {
+  type: LogMessageType,
+  color: Color
+  emptySpotKey: string
+}
+
+export type LogMessageComponentProps = AttackLogMessageProps | ConnectLogMessageProps | MoveToEmptySpaceLogMessageProps
 
 export class LogMessageComponent extends React.Component<LogMessageComponentProps> {
 
@@ -24,24 +30,49 @@ export class LogMessageComponent extends React.Component<LogMessageComponentProp
 
     constructor(props: LogMessageComponentProps) {
       super(props)
-      switch (this.props.type) {
-        case LogMessageType.Attack:
-          this.message = "attacked"
-          const attackLogProps = this.props as AttackLogMessageProps
-          if (attackLogProps.source) {
-            this.sourceImageName = "/images/" + attackLogProps.source.name + Color[attackLogProps.source.color] + ".jpg"
+      switch (this.props.type) {        
+        case LogMessageType.Leave:
+        case LogMessageType.Join:
+        case LogMessageType.Setup:
+          const connectLogProps = this.props as ConnectLogMessageProps
+          this.sourceImageName = "/images/Blocked" + Color[connectLogProps.color] + ".jpg"
+          var subMessage : string
+          switch (connectLogProps.type) {
+            case LogMessageType.Join:
+              subMessage = connectLogProps.setupCompleted ? " re-joined" : " joined"
+              break;
+            case LogMessageType.Leave:
+              subMessage = " left the game. Game paused until they re-join."
+              break;
+            case LogMessageType.Setup:
+              subMessage = " completed setup."
+              break;
           }
-          if (attackLogProps.target) {
-            this.targetImageName = "/images/" + attackLogProps.target.name + Color[attackLogProps.target.color] + ".jpg"
-          }
+          this.message = connectLogProps.name + subMessage
           break;
 
-        case LogMessageType.Join:
-          const joinLogProps = this.props as JoinLogMessageProps
-          this.sourceImageName = "/images/Blocked" + Color[joinLogProps.color] + ".jpg"
-          const subMessage = joinLogProps.setupCompleted ? " re-joined" : " joined"
-          this.message = joinLogProps.name + subMessage
+        case LogMessageType.MoveToEmpty: 
+          const moveToEmptySpotParams = this.props as MoveToEmptySpaceLogMessageProps
+          this.message = " moved to the empty spot at " + moveToEmptySpotParams.emptySpotKey
+          this.sourceImageName = "/images/Blocked" + Color[moveToEmptySpotParams.color] + ".jpg"
+
+        default:
+          const attackLogProps = this.props as AttackLogMessageProps
+          switch (attackLogProps.type) {
+            case LogMessageType.Attack:
+              this.message = "attacked"
+              break;
+            case LogMessageType.AttackWin:
+              this.message = "defeated"
+              break;
+            case LogMessageType.TakeOut:
+              this.message = "took out"
+              break;
+          }
+          this.sourceImageName = "/images/" + attackLogProps.source.name + Color[attackLogProps.source.color] + ".jpg"
+          this.targetImageName = "/images/" + attackLogProps.target.name + Color[attackLogProps.target.color] + ".jpg"
           break;
+
       }
     }
 
