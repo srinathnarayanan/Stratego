@@ -1,10 +1,10 @@
 import * as React from 'react'
-import { PieceContent, LogMessageType } from '../DataModels/ContentModels'
-import { LogMessageComponent } from './LogMessage'
+import { LogMessageComponent, LogMessageComponentProps } from './LogMessage'
+import { LogMessageType } from '../DataModels/ContentModels'
 
 interface MoveInfoBoxProps {
-    piece: PieceContent
-    playerMoveToEmptySpot: boolean
+    addLog: (log: LogMessageComponentProps) => void,
+    logProps: LogMessageComponentProps,
     show: boolean,
     refElement: HTMLTableDataCellElement,
     onClick: () => void
@@ -21,13 +21,13 @@ export class MoveInfoBoxComponent extends React.Component<MoveInfoBoxProps, Move
       this.state = {
           show: this.props.show
       }
-      if (props.playerMoveToEmptySpot) {
+      if (!props.logProps) {
         props.onClick()
       }
     }
 
     render() {
-        return (this.state.show && this.props.refElement && !this.props.playerMoveToEmptySpot)? 
+        return (this.state.show && this.props.refElement && this.props.logProps)? 
         <div className="MoveInfoBox" 
         style={{
             margin: "20px",
@@ -36,9 +36,12 @@ export class MoveInfoBoxComponent extends React.Component<MoveInfoBoxProps, Move
             padding:"5px",
             position: "absolute",
             }}>
-            <LogMessageComponent source={this.props.piece} target={this.props.piece} type={LogMessageType.Attack} />               
+            <LogMessageComponent {...this.props.logProps} />               
             <button onClick={() => {
                     this.props.onClick()
+                    if (this.props.logProps.type !== LogMessageType.Attack) {
+                        this.props.addLog(this.props.logProps)
+                    }
                     this.setState({show: false})
                 }}>Dismiss</button>
         </div> :

@@ -8,6 +8,7 @@ import { Board } from './Board'
 import * as io from 'socket.io-client'
 import { Gallery } from './Gallery'
 import { LogMessageComponent, LogMessageComponentProps } from './LogMessage'
+import { cloneDeep } from 'lodash'
 
 const URL = process.env.REACT_APP_BACKEND_URL
 
@@ -16,7 +17,7 @@ interface LandingPageState {
   color: Color,
   roomNumber: string,
   receivedRoomNumber: string,
-  messages: LogMessageComponentProps[],
+  logs: LogMessageComponentProps[],
   playerPieces: PieceMap,
   ws: SocketIOClient.Socket,
   setupCompleted: boolean,
@@ -25,8 +26,10 @@ interface LandingPageState {
   removedPieces: PieceContent[],
   opponentName: string,
   opponentColor: Color,
-  opponentMoveFrom: string,
-  opponentMoveTo: string,
+  opponentMoveFromKey: string,
+  opponentMoveFromPiece: PieceContent
+  opponentMoveToKey: string,
+  opponentMoveToPiece: PieceContent,
   winnerKey: string,
   loserKey: string[],
   statusAfterMove: Status,
@@ -41,7 +44,7 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
       color: Color.Red,
       roomNumber: undefined,
       receivedRoomNumber: undefined,
-      messages: [],
+      logs: [],
       playerPieces: {},
       ws: undefined,
       status: Status.NotStarted,
@@ -49,8 +52,10 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
       sidebarOpen: false,
       removedPieces: [],
       opponentName: undefined,
-      opponentMoveFrom: undefined,
-      opponentMoveTo: undefined,
+      opponentMoveFromKey: undefined,
+      opponentMoveFromPiece: undefined,
+      opponentMoveToKey: undefined,
+      opponentMoveToPiece: undefined,
       winnerKey: undefined,
       loserKey: undefined,
       statusAfterMove: undefined,
@@ -86,14 +91,14 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
       });
 
       if (initialContent.opponentName) {
-        this.addMessage({
+        this.addLog({
           setupCompleted: initialContent.setupCompleted,
           name: initialContent.opponentName,
           color: this.state.opponentColor,
           type:LogMessageType.Join
         })  
       } 
-      this.addMessage({
+      this.addLog({
         setupCompleted: initialContent.setupCompleted,
         name: initialContent.name,
         color: initialContent.color,
@@ -122,7 +127,7 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
       }
 
       this.setState({playerPieces: playerPieces, status: arrangedPiecesMessage.status})
-      this.addMessage({
+      this.addLog({
         type: LogMessageType.Setup,
         setupCompleted: true,
         name: this.state.opponentName,
@@ -137,8 +142,10 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
 
       this.processMove(playerPieces, moveMessage.moveFromKey, moveMessage.moveToKey)
       this.setState({playerPieces: playerPieces, 
-        opponentMoveFrom: moveMessage.moveFromKey, 
-        opponentMoveTo: moveMessage.moveToKey,
+        opponentMoveFromKey: moveMessage.moveFromKey, 
+        opponentMoveFromPiece: cloneDeep(playerPieces[moveMessage.moveFromKey]),
+        opponentMoveToKey: moveMessage.moveToKey,
+        opponentMoveToPiece: cloneDeep(playerPieces[moveMessage.moveToKey]),
         winnerKey: moveMessage.winnerKey, 
         loserKey: moveMessage.loserKey, 
         statusAfterMove: moveMessage.status, 
@@ -151,7 +158,7 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
       const statusMessage = message as StatusMessage;
       if (!this.state.opponentName) {
         this.setState({opponentColor: this.state.color === Color.Red ? Color.Blue : Color.Red})
-        this.addMessage({
+        this.addLog({
           setupCompleted: statusMessage.setupCompleted,
           name: statusMessage.opponentName,
           color: this.state.opponentColor,
@@ -159,14 +166,14 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
         })  
       }
       if (statusMessage.status === Status.Paused) {
-        this.addMessage({
+        this.addLog({
           setupCompleted: statusMessage.setupCompleted,
           name: statusMessage.opponentName,
           color: this.state.opponentColor,
           type:LogMessageType.Leave
         })
       } else if (this.state.status === Status.Paused) {
-        this.addMessage({
+        this.addLog({
           setupCompleted: statusMessage.setupCompleted,
           name: statusMessage.opponentName,
           color: this.state.opponentColor,
@@ -205,8 +212,8 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
   moveFromInfoButtonOnClick = () : void => {
     const loserKey = this.state.loserKey
     const winnerKey = this.state.winnerKey
-    const moveFromKey = this.state.opponentMoveFrom
-    const moveToKey = this.state.opponentMoveTo
+    const moveFromKey = this.state.opponentMoveFromKey
+    const moveToKey = this.state.opponentMoveToKey
     const playerPieces = this.state.playerPieces
 
     for (var i = 0; i < loserKey.length; i++) {
@@ -221,15 +228,17 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
   }
 
   moveToInfoButtonOnClick = () : void => {
-    const moveToKey = this.state.opponentMoveTo
+    const moveToKey = this.state.opponentMoveToKey
     const playerPieces = this.state.playerPieces
     this.resetInPlay(playerPieces, moveToKey)
     this.setState({
       playerPieces: playerPieces,
       loserKey: undefined, 
       winnerKey: undefined, 
-      opponentMoveFrom: undefined, 
-      opponentMoveTo: undefined,
+      opponentMoveFromKey: undefined,
+      opponentMoveFromPiece: undefined, 
+      opponentMoveToKey: undefined,
+      opponentMoveToPiece: undefined,
       status: this.state.statusAfterMove,
       statusAfterMove: undefined,
       moveStatus: MoveStatus.NotMoved
@@ -239,8 +248,8 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
     //this.addMessage(this.state.opponentName  + " finished a move.")
   }
 
-  addMessage = (message: LogMessageComponentProps) : void => 
-    this.setState(state => ({ messages: [message, ...state.messages] }))
+  addLog = (log: LogMessageComponentProps) : void => 
+    this.setState(state => ({ logs: [log, ...state.logs] }))
 
   submitJoinGameMessage = () => {
     const message : Message = {
@@ -260,7 +269,7 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
       status: this.state.status,
     }
     this.ws.emit(MessageTypes.Setup, JSON.stringify(message))
-    this.addMessage({
+    this.addLog({
       type: LogMessageType.Setup,
       setupCompleted: true,
       name: this.state.name,
@@ -304,7 +313,7 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
           <>
           <div className="Message">
             <h2> LOGS </h2>
-              {this.state.messages.map((props : LogMessageComponentProps) => {
+              {this.state.logs.map((props : LogMessageComponentProps) => {
               return <><LogMessageComponent key={(new Date()).toString()} {...props}/><br/></>
               })}
           </div>
@@ -369,8 +378,10 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
 
         <Board 
         playerColor={this.state.color} 
-        opponentMoveFrom={this.state.opponentMoveFrom}
-        opponentMoveTo={this.state.opponentMoveTo}      
+        opponentMoveFromKey={this.state.opponentMoveFromKey}
+        opponentMoveToKey={this.state.opponentMoveToKey}
+        opponentMoveFromPiece={this.state.opponentMoveFromPiece}      
+        opponentMoveToPiece={this.state.opponentMoveToPiece}      
         playerPieces={this.state.playerPieces} 
         status={this.state.status} 
         setupCompleted={this.state.setupCompleted}
@@ -379,6 +390,7 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
         onClickStartButton={this.sendSetupMessage}
         moveFromInfoButtonOnClick={this.moveFromInfoButtonOnClick}
         moveToInfoButtonOnClick={this.moveToInfoButtonOnClick}
+        addLog={this.addLog}
         moveStatus={this.state.moveStatus}
         />
     </>}

@@ -2,19 +2,24 @@ import * as React from 'react'
 import { PieceMap, PieceContent, Status, Color, MoveMessageParams, MoveStatus, Result } from '../DataModels/ContentModels'
 import { Square } from "./Square"
 import { getPossibleMoves, resolveRank } from "../GamePlay/MovePieces"
+import { LogMessageComponentProps } from './LogMessage';
+import { target } from 'webpack.config';
 
 export interface BoardProps {
   playerColor: Color,
   playerPieces: PieceMap,
   status: Status,
   setupCompleted: boolean,
-  opponentMoveFrom: string,
-  opponentMoveTo: string,
+  opponentMoveFromKey: string,
+  opponentMoveToKey: string,
+  opponentMoveFromPiece: PieceContent,      
+  opponentMoveToPiece: PieceContent,      
   addRemovedPieceToGallery: (removedPiece: PieceContent) => void,
   sendMoveMessage: (moveMessageParams: MoveMessageParams) => void,
   onClickStartButton: (pieces: PieceMap) => void,
   moveFromInfoButtonOnClick: () => void, 
   moveToInfoButtonOnClick: () => void,
+  addLog: (log: LogMessageComponentProps) => void,
   moveStatus: MoveStatus
 }
 
@@ -24,7 +29,8 @@ export interface BoardState {
   focusColumnIndex: number,
   possibleMoves: string [],
   result: Result,
-  targetPieceKey: string
+  targetPieceKey: string,
+  focusPiece: PieceContent,
 }  
 
 export class Board extends React.Component<BoardProps, BoardState> {
@@ -37,7 +43,8 @@ export class Board extends React.Component<BoardProps, BoardState> {
       focusColumnIndex: undefined,
       possibleMoves: [],
       result: undefined,
-      targetPieceKey: undefined
+      targetPieceKey: undefined,
+      focusPiece: undefined,
     }
   }
 
@@ -97,7 +104,7 @@ export class Board extends React.Component<BoardProps, BoardState> {
                       }
                                             
                       var result = resolveRank(focusPiece, focusPieceKey, targetPiece, targetPieceKey, this.props.addRemovedPieceToGallery)
-                      this.setState({targetPieceKey: targetPieceKey, result: result})
+                      this.setState({targetPieceKey: targetPieceKey, result: result, focusPiece: focusPiece})
                       
                     } else {
                     }
@@ -133,7 +140,8 @@ export class Board extends React.Component<BoardProps, BoardState> {
       focusRowIndex: undefined, 
       possibleMoves: [],
       targetPieceKey: undefined,
-      result: undefined
+      result: undefined,
+      focusPiece: undefined
     })
     this.forceUpdate()
 
@@ -154,8 +162,10 @@ export class Board extends React.Component<BoardProps, BoardState> {
       const rowIndex = i;
       rows.push(<BoardRow 
         rowIndex={i} 
-        opponentMoveFrom={this.props.opponentMoveFrom}
-        opponentMoveTo={this.props.opponentMoveTo}
+        opponentMoveFromKey={this.props.opponentMoveFromKey}
+        opponentMoveFromPiece={this.props.opponentMoveFromPiece}
+        opponentMoveToKey={this.props.opponentMoveToKey}
+        opponentMoveToPiece={this.props.opponentMoveToPiece}
         focusRowIndex={this.state.focusRowIndex}
         focusColumnIndex={this.state.focusColumnIndex}
         playerPieces={this.state.playerPieces} 
@@ -167,7 +177,9 @@ export class Board extends React.Component<BoardProps, BoardState> {
         moveToInfoButtonOnClick={this.props.moveToInfoButtonOnClick}
         moveStatus={this.props.moveStatus}
         playerMoveToInfoButtonOnClick={this.playerMoveToInfoButtonOnClick}  
+        addLog={this.props.addLog}
         targetPieceKey={this.state.targetPieceKey}
+        focusPiece={this.state.focusPiece}
         />)
     }
     return rows;
@@ -194,8 +206,10 @@ export class Board extends React.Component<BoardProps, BoardState> {
 
 interface BoardRowProps {
   rowIndex: number
-  opponentMoveFrom: string,
-  opponentMoveTo: string,
+  opponentMoveFromKey: string,
+  opponentMoveFromPiece: PieceContent,
+  opponentMoveToKey: string,
+  opponentMoveToPiece: PieceContent,
   playerPieces: PieceMap,
   onClick: (columnIndex: number) => void,
   focusRowIndex: number,
@@ -206,7 +220,9 @@ interface BoardRowProps {
   moveToInfoButtonOnClick: () => void,
   moveStatus: MoveStatus,
   playerMoveToInfoButtonOnClick: () => void,
-  targetPieceKey: string
+  addLog: (log: LogMessageComponentProps) => void,
+  targetPieceKey: string,
+  focusPiece: PieceContent
 }
 
 interface BoardRowState {
@@ -234,8 +250,10 @@ class BoardRow extends React.Component<BoardRowProps, BoardRowState> {
       const columnIndex = i;
       squares.push(<Square key={key} 
         rowIndex={this.props.rowIndex}
-        opponentMoveFrom={this.props.opponentMoveFrom}
-        opponentMoveTo={this.props.opponentMoveTo}
+        opponentMoveFromKey={this.props.opponentMoveFromKey}
+        opponentMoveFromPiece={this.props.opponentMoveFromPiece}
+        opponentMoveToKey={this.props.opponentMoveToKey}
+        opponentMoveToPiece={this.props.opponentMoveToPiece}
         columnIndex={columnIndex} 
         focusRowIndex={this.props.focusRowIndex}
         focusColumnIndex={this.props.focusColumnIndex}
@@ -247,7 +265,9 @@ class BoardRow extends React.Component<BoardRowProps, BoardRowState> {
         moveToInfoButtonOnClick={this.props.moveToInfoButtonOnClick}
         moveStatus={this.props.moveStatus}
         playerMoveToInfoButtonOnClick={this.props.playerMoveToInfoButtonOnClick}
+        addLog={this.props.addLog}
         targetPieceKey={this.props.targetPieceKey}
+        focusPiece={this.props.focusPiece}
         />)
     }
     return squares;

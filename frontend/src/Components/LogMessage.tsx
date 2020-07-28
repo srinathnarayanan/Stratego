@@ -55,6 +55,7 @@ export class LogMessageComponent extends React.Component<LogMessageComponentProp
           const moveToEmptySpotParams = this.props as MoveToEmptySpaceLogMessageProps
           this.message = " moved to the empty spot at " + moveToEmptySpotParams.emptySpotKey
           this.sourceImageName = "/images/Blocked" + Color[moveToEmptySpotParams.color] + ".jpg"
+          break;
 
         default:
           const attackLogProps = this.props as AttackLogMessageProps
