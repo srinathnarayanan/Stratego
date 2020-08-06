@@ -78,7 +78,7 @@ export class LogMessageComponent extends React.Component<LogMessageComponentProp
     }
 
     render() {
-        return <div style={{padding: "10px"}}>
+        return <div style={{padding: "10px", textAlign: "center"}}>
           {this.sourceImageName ? <img style={{display: "inline-block", verticalAlign:"middle"}} src={this.sourceImageName}/> : <></>}
           <span style={{display: "inline-block", padding: "10px"}}><b>  {this.message}  </b></span>
           {this.targetImageName ? <img style={{display: "inline-block", verticalAlign:"middle"}} src={this.targetImageName}/> : <></>}

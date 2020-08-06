@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Stack, TextField, IStackStyles, IStackProps, PrimaryButton, ITextFieldProps } from "office-ui-fabric-react";
+import { Stack, TextField, IStackStyles, IStackProps, PrimaryButton, ITextFieldProps, Checkbox } from "office-ui-fabric-react";
 
 interface TextFieldWrapperProps {
     textFieldProps: ITextFieldProps,
@@ -20,13 +20,14 @@ class TextFieldWrapper extends React.Component<TextFieldWrapperProps> {
 }
 
 export interface SignUpPageProps {
-    submitJoinGameMessage: (name: string, roomNumber: string) => void
+    submitJoinGameMessage: (name: string, roomNumber: string, enableAllLogs: boolean) => void
 }
 
 interface SignUpPageState {
     name: string,
     roomNumber: string,
-    startRoomFocussed: boolean
+    startRoomFocussed: boolean,
+    enableAllLogs: boolean
 }
 
 export class SignUpPageComponent extends React.Component<SignUpPageProps, SignUpPageState> {
@@ -41,7 +42,8 @@ export class SignUpPageComponent extends React.Component<SignUpPageProps, SignUp
     this.state = {
         name: undefined,
         roomNumber: undefined,
-        startRoomFocussed: true
+        startRoomFocussed: true,
+        enableAllLogs: true
     }
   }
 
@@ -60,9 +62,14 @@ export class SignUpPageComponent extends React.Component<SignUpPageProps, SignUp
             }
         }}
         reset={!this.state.startRoomFocussed}/>
+        <Checkbox 
+            label="Log everything!" 
+            defaultChecked
+            onChange={(e, isChecked) => this.setState({enableAllLogs: isChecked})}
+            disabled={!this.state.startRoomFocussed} />
         <PrimaryButton 
             text="Start a game" 
-            onClick={() => this.props.submitJoinGameMessage(this.state.name, undefined)} 
+            onClick={() => this.props.submitJoinGameMessage(this.state.name, undefined, this.state.enableAllLogs)} 
             allowDisabledFocus 
             disabled={!this.state.startRoomFocussed}/>
         </Stack>
@@ -91,7 +98,7 @@ export class SignUpPageComponent extends React.Component<SignUpPageProps, SignUp
         reset={this.state.startRoomFocussed}/>
         <PrimaryButton 
             text="Join existing game" 
-            onClick={() => this.props.submitJoinGameMessage(this.state.name, this.state.roomNumber)} 
+            onClick={() => this.props.submitJoinGameMessage(this.state.name, this.state.roomNumber, undefined)} 
             allowDisabledFocus 
             disabled={this.state.startRoomFocussed}/>
         </Stack>

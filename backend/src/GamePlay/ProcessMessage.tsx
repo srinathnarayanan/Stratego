@@ -56,6 +56,7 @@ export const processMessage = (room: RoomContent, message: SetupMessage, message
         roomNumber: message.roomNumber,
         name: source.name,
         color: source.color,
+        enableAllLogs: room.enableAllLogs,
         status: message.status,
         setupCompleted: source.setupCompleted,
         opponentName: destination.name
@@ -80,6 +81,7 @@ export const reconnect = (room: RoomContent, message: Message, ws: socket.Socket
                 name: undefined,
                 color: undefined,
                 roomNumber: undefined,
+                enableAllLogs: undefined,
                 error: "2 players have already joined this game."
             }
             ws.emit(MessageTypes.Error, JSON.stringify(errorMessage))
@@ -103,6 +105,7 @@ export const reconnect = (room: RoomContent, message: Message, ws: socket.Socket
             const statusMessage : StatusMessage = {
                 name: destination.name,
                 color: destination.color,
+                enableAllLogs: room.enableAllLogs,
                 roomNumber: room.roomNumber,
                 status: room.status,
                 setupCompleted: destination.setupCompleted,
@@ -122,6 +125,7 @@ export const reconnect = (room: RoomContent, message: Message, ws: socket.Socket
         const initialData : InitialMessage = {
             name: source.name,
             color: source.color,
+            enableAllLogs: room.enableAllLogs,
             roomNumber: room.roomNumber,
             initialPositions: combinedPieces,
             status: room.status,

@@ -9,6 +9,7 @@ import { Gallery } from './Gallery'
 import { LogMessageComponent, LogMessageComponentProps } from './LogMessage'
 import { cloneDeep } from 'lodash'
 import { SignUpPageComponent } from './SignUpPage'
+import { Text, Stack } from 'office-ui-fabric-react'
 
 const URL = process.env.REACT_APP_BACKEND_URL
 
@@ -17,6 +18,7 @@ interface LandingPageState {
   color: Color,
   receivedRoomNumber: string,
   logs: LogMessageComponentProps[],
+  latestPlayLog: LogMessageComponentProps,
   playerPieces: PieceMap,
   ws: SocketIOClient.Socket,
   setupCompleted: boolean,
@@ -32,7 +34,8 @@ interface LandingPageState {
   winnerKey: string,
   loserKey: string[],
   statusAfterMove: Status,
-  moveStatus: MoveStatus
+  moveStatus: MoveStatus,
+  enableAllLogs: boolean
 } 
 
 export class LandingPage extends React.Component<{}, LandingPageState> {
@@ -43,6 +46,7 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
       color: Color.Red,
       receivedRoomNumber: undefined,
       logs: [],
+      latestPlayLog: undefined,
       playerPieces: {},
       ws: undefined,
       status: Status.NotStarted,
@@ -58,7 +62,8 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
       loserKey: undefined,
       statusAfterMove: undefined,
       moveStatus: MoveStatus.NotMoved,
-      opponentColor: undefined
+      opponentColor: undefined,
+      enableAllLogs: undefined
     }
     this.onSetSidebarOpen = this.onSetSidebarOpen.bind(this);
   }
@@ -85,7 +90,8 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
         color: initialContent.color,
         setupCompleted: initialContent.setupCompleted,
         opponentName: initialContent.opponentName,
-        opponentColor: initialContent.color === Color.Red ? Color.Blue : Color.Red
+        opponentColor: initialContent.color === Color.Red ? Color.Blue : Color.Red,
+        enableAllLogs: initialContent.enableAllLogs
       });
 
       if (initialContent.opponentName) {
@@ -241,23 +247,31 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
       statusAfterMove: undefined,
       moveStatus: MoveStatus.NotMoved
     })
-    this.forceUpdate()
-    
-    //this.addMessage(this.state.opponentName  + " finished a move.")
+    this.forceUpdate()    
   }
 
-  addLog = (log: LogMessageComponentProps) : void => 
-    this.setState(state => ({ logs: [log, ...state.logs] }))
+  addLog = (log: LogMessageComponentProps) : void => {
+    if (this.state.enableAllLogs || 
+      log.type === LogMessageType.Join || 
+      log.type === LogMessageType.Leave ||
+      log.type === LogMessageType.Setup) {
+        this.setState(state => ({ logs: [log, ...state.logs] }))
+    } else {
+      this.setState({latestPlayLog: log})
+    }
+  }
 
-  submitJoinGameMessage = (name: string, roomNumber: string) => {
+  submitJoinGameMessage = (name: string, roomNumber: string, enableAllLogs: boolean) => {
     if(!name) {
       alert("Please enter a name to start.")
       return
     }
+    this.setState({name: name})
     const message : Message = {
       name: name, 
       color: this.state.color, 
-      roomNumber: roomNumber
+      roomNumber: roomNumber,
+      enableAllLogs: enableAllLogs
     }
     this.ws.emit(MessageTypes.Join, JSON.stringify(message))
   }
@@ -266,6 +280,7 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
     const message : SetupMessage = { 
       name: this.state.name, 
       color: this.state.color, 
+      enableAllLogs: this.state.enableAllLogs,
       arrangedPositions: pieces, 
       roomNumber: this.state.receivedRoomNumber,
       status: this.state.status,
@@ -283,6 +298,7 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
     const message : MoveMessage = { 
       name: this.state.name, 
       color: this.state.color, 
+      enableAllLogs: this.state.enableAllLogs,
       roomNumber: this.state.receivedRoomNumber,
       arrangedPositions: moveMessageParams.arrangePositions,
       status: moveMessageParams.isFlagTaken ? Status.Finished : this.state.status,
@@ -292,7 +308,6 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
       moveToKey: moveMessageParams.moveToKey
     }
     this.ws.emit(MessageTypes.Move, JSON.stringify(message))
-    //this.addMessage(this.state.name + " finished setup.")    
   }
 
   addRemovedPieceToGallery = (removedPiece: PieceContent) => {
@@ -314,10 +329,19 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
         sidebar={
           <>
           <div className="Message">
-            <h2> LOGS </h2>
+            <Stack key={(new Date()).toString()} padding="10px" tokens={{ childrenGap: 20 }} >
+              {this.state.latestPlayLog &&
+              <>
+              <h2>Last Move</h2>
+              <LogMessageComponent  {...this.state.latestPlayLog}/>
+              </>
+              }
+
+              <h2>Logs</h2>
               {this.state.logs.map((props : LogMessageComponentProps) => {
-              return <><LogMessageComponent key={(new Date()).toString()} {...props}/><br/></>
+              return <LogMessageComponent  {...props}/>
               })}
+            </Stack>
           </div>
           <div className="Gallery">
             <h2> Gallery </h2>

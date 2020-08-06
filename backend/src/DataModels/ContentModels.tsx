@@ -25,7 +25,8 @@ export interface RoomContent {
     player2: PlayerContent, 
     status: Status,
     prevStatus: Status,
-    roomNumber: string
+    roomNumber: string,
+    enableAllLogs: boolean
 }
 
 export interface SocketContent {

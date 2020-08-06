@@ -52,7 +52,8 @@ io.on('connection', function connection(ws) {
         player2: undefined,
         prevStatus: undefined,
         status: Status.NotStarted,
-        roomNumber: roomNumber
+        roomNumber: roomNumber,
+        enableAllLogs: message.enableAllLogs
       };
       
       const initialData : InitialMessage = {
@@ -62,7 +63,8 @@ io.on('connection', function connection(ws) {
         initialPositions: player1.pieces,
         status: Status.NotStarted,
         setupCompleted: false,
-        opponentName: undefined
+        opponentName: undefined,
+        enableAllLogs: message.enableAllLogs
       }
 
       ws.emit(MessageTypes.Join, JSON.stringify(initialData));
@@ -105,7 +107,8 @@ io.on('connection', function connection(ws) {
                 initialPositions: player2.pieces,
                 status: Status.Setup,
                 setupCompleted: false,
-                opponentName: player1.name
+                opponentName: player1.name,
+                enableAllLogs: rooms[roomNumber].enableAllLogs
               }
         
               ws.emit(MessageTypes.Join, JSON.stringify(initialData));
@@ -116,7 +119,8 @@ io.on('connection', function connection(ws) {
 
               const statusMessage : StatusMessage = {
                 name: player1.name,
-                color: player1.color,        
+                color: player1.color,
+                enableAllLogs: rooms[roomNumber].enableAllLogs,
                 roomNumber: roomNumber,
                 status: Status.Setup,
                 setupCompleted: player1.setupCompleted,
@@ -195,7 +199,8 @@ function removeWebsocket(ws: socket.Socket) {
       room.status = Status.Paused
       const statusMessage : StatusMessage = {
         name: destination.name,
-        color: destination.color,        
+        color: destination.color,       
+        enableAllLogs: room.enableAllLogs,
         roomNumber: socket.roomNumber,
         status: Status.Paused,
         setupCompleted: destination.setupCompleted,
