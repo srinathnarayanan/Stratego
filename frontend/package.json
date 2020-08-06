@@ -11,6 +11,7 @@
     "@types/socket.io-client": "^1.4.33",
     "lodash": "^4.17.19",
     "nodemon": "^2.0.4",
+    "office-ui-fabric-react": "^7.126.1",
     "prop-types": "^15.6.2",
     "react": "^16.5.0",
     "react-dom": "^16.5.0",

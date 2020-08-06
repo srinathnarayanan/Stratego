@@ -1,6 +1,5 @@
 import * as React from 'react'
 import SideBar from "react-sidebar"
-import { ChatInput } from './JoinGameButton'
 import { InitialMessage, StatusMessage, SetupMessage, ErrorMessage, Message, MoveMessage} from '../DataModels/MessageModels'
 import { PieceMap, Status, Color, MessageTypes, MoveMessageParams, PieceContent, ElementMap, MoveStatus, LogMessageType} from '../DataModels/ContentModels'
 import { Board } from './Board'
@@ -9,13 +8,13 @@ import * as io from 'socket.io-client'
 import { Gallery } from './Gallery'
 import { LogMessageComponent, LogMessageComponentProps } from './LogMessage'
 import { cloneDeep } from 'lodash'
+import { SignUpPageComponent } from './SignUpPage'
 
 const URL = process.env.REACT_APP_BACKEND_URL
 
 interface LandingPageState {
   name: string,
   color: Color,
-  roomNumber: string,
   receivedRoomNumber: string,
   logs: LogMessageComponentProps[],
   playerPieces: PieceMap,
@@ -42,7 +41,6 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
     this.state = {
       name: 'Player 1',
       color: Color.Red,
-      roomNumber: undefined,
       receivedRoomNumber: undefined,
       logs: [],
       playerPieces: {},
@@ -251,11 +249,15 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
   addLog = (log: LogMessageComponentProps) : void => 
     this.setState(state => ({ logs: [log, ...state.logs] }))
 
-  submitJoinGameMessage = () => {
+  submitJoinGameMessage = (name: string, roomNumber: string) => {
+    if(!name) {
+      alert("Please enter a name to start.")
+      return
+    }
     const message : Message = {
-      name: this.state.name, 
+      name: name, 
       color: this.state.color, 
-      roomNumber: this.state.roomNumber
+      roomNumber: roomNumber
     }
     this.ws.emit(MessageTypes.Join, JSON.stringify(message))
   }
@@ -339,37 +341,7 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
 
 
         {!this.state.receivedRoomNumber ? 
-        <div>
-          Name:&nbsp;
-          <input
-            type="text"
-            id={'name'}
-            placeholder={'Enter your name...'}
-            value={this.state.name}
-            onChange={e => this.setState({ name: e.target.value })}
-          />
-          <br/>
-          <div>
-        <ChatInput
-          name="start a game"
-          onSubmitMessage={() => this.submitJoinGameMessage()}
-        />
-        Room code:&nbsp;
-          <input
-            type="text"
-            id={'roomcode'}
-            placeholder={'Enter roomcode to join...'}
-            value={this.state.roomNumber}
-            onChange={e => this.setState({ roomNumber: e.target.value })}
-          />
-          <br/>
-          <ChatInput
-          name="join existing game"
-          onSubmitMessage={() => this.submitJoinGameMessage()}
-         />
-
-        </div>
-      </div>
+        <SignUpPageComponent submitJoinGameMessage={this.submitJoinGameMessage} />
       :  
       <>
         <button onClick={() => this.onSetSidebarOpen(true)} className="LogsButton">
