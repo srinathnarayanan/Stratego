@@ -1,6 +1,6 @@
 import { Status, PieceMap, PieceContent, Color, Result } from "../DataModels/ContentModels"
   
-export const getPossibleMoves = (playerPieces: PieceMap, rowIndex: number, columnIndex: number, playerColor: Color) : string[] => {
+export const getPossibleMoves = (playerPieces: PieceMap, rowIndex: number, columnIndex: number, playerColor: Color, findFirstPossibleMove: boolean) : string[] => {
     var possibleMoves : string[]
     possibleMoves = []
 
@@ -24,9 +24,15 @@ export const getPossibleMoves = (playerPieces: PieceMap, rowIndex: number, colum
             if (row >= 0 && row <= 9 && col >= 0 && col <= 9) {
                 var key = col + "," + row
                 if (!playerPieces[key]) {
+                    if (findFirstPossibleMove) {
+                        return [key]
+                    }
                     possibleMoves.push(key);
                 } else {
                     if (playerPieces[key].color !== playerColor && playerPieces[key].color !== Color.Water) {
+                        if (findFirstPossibleMove) {
+                            return [key]
+                        }    
                         possibleMoves.push(key);
                     }
                     break;

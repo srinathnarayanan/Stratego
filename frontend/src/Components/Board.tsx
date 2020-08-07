@@ -3,7 +3,7 @@ import { PieceMap, PieceContent, Status, Color, MoveMessageParams, MoveStatus, R
 import { Square } from "./Square"
 import { getPossibleMoves, resolveRank } from "../GamePlay/MovePieces"
 import { LogMessageComponentProps } from './LogMessage';
-import { target } from 'webpack.config';
+import { PrimaryButton } from 'office-ui-fabric-react';
 
 export interface BoardProps {
   playerColor: Color,
@@ -79,7 +79,7 @@ export class Board extends React.Component<BoardProps, BoardState> {
                   // on your turn, focus on clicked box and possible moves
                   // move if second click is on possible move locations
                   if (this.state.focusRowIndex === undefined && this.state.focusRowIndex === undefined) {
-                    var possibleMoves = getPossibleMoves(this.state.playerPieces, rowIndex, columnIndex, this.props.playerColor)
+                    var possibleMoves = getPossibleMoves(this.state.playerPieces, rowIndex, columnIndex, this.props.playerColor, false)
                     if (possibleMoves.length === 0) {
                       alert("you can't move this piece")
                       return
@@ -107,6 +107,12 @@ export class Board extends React.Component<BoardProps, BoardState> {
                       this.setState({targetPieceKey: targetPieceKey, result: result, focusPiece: focusPiece})
                       
                     } else {
+                      var possibleMoves = getPossibleMoves(this.state.playerPieces, rowIndex, columnIndex, this.props.playerColor, false)
+                      if (possibleMoves.length === 0) {
+                        alert("you can't move this piece")
+                        return
+                      }
+                      this.setState({focusRowIndex: rowIndex, focusColumnIndex: columnIndex, possibleMoves: possibleMoves})  
                     }
                   } 
     } else {
@@ -198,7 +204,7 @@ export class Board extends React.Component<BoardProps, BoardState> {
         </tbody>
       </table>
       {this.props.status === Status.Setup || Status.SetUpMidway ? 
-      <button className={this.props.setupCompleted || this.props.status === Status.NotStarted ? "Invisible" : "Visible"} onClick={() => this.onClickStartButton()}> Start game! </button>: <></>}   
+      <PrimaryButton className={this.props.setupCompleted || this.props.status === Status.NotStarted ? "Invisible" : "Visible"} onClick={() => this.onClickStartButton()}> Start game! </PrimaryButton>: <></>}   
       </div>
       )
   }

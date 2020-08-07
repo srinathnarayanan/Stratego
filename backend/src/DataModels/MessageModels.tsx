@@ -15,14 +15,16 @@ export interface InitialMessage extends Message {
 }
 
 export interface SetupMessage extends Message {
-    logMessage: string,
     arrangedPositions: PieceMap,
     status: Status
 }
 
 export interface MoveMessage extends SetupMessage {
+    status: Status,
     winnerKey: string,
-    loserKey: string[] 
+    loserKey: string[],
+    moveFromKey: string,
+    moveToKey: string,
 }
 
 export interface StatusMessage extends Message {

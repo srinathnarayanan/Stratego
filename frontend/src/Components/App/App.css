@@ -24,6 +24,10 @@
   float: left;
 }
 
+.ClaimVictoryButton {
+  float: right;
+}
+
 table {
   border-collapse: collapse;
 }
@@ -61,7 +65,7 @@ td.SemiFocussedBlue {
   overflow: auto;
 }
 
-button.Invisible {
+.Invisible {
   display: none;
 }
 

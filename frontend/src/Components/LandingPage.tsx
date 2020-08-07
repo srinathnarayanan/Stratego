@@ -1,7 +1,7 @@
 import * as React from 'react'
 import SideBar from "react-sidebar"
 import { InitialMessage, StatusMessage, SetupMessage, ErrorMessage, Message, MoveMessage} from '../DataModels/MessageModels'
-import { PieceMap, Status, Color, MessageTypes, MoveMessageParams, PieceContent, ElementMap, MoveStatus, LogMessageType} from '../DataModels/ContentModels'
+import { PieceMap, Status, Color, MessageTypes, MoveMessageParams, PieceContent, MoveStatus, LogMessageType} from '../DataModels/ContentModels'
 import { Board } from './Board'
 
 import * as io from 'socket.io-client'
@@ -9,7 +9,8 @@ import { Gallery } from './Gallery'
 import { LogMessageComponent, LogMessageComponentProps } from './LogMessage'
 import { cloneDeep } from 'lodash'
 import { SignUpPageComponent } from './SignUpPage'
-import { Text, Stack } from 'office-ui-fabric-react'
+import { Text, Stack, PrimaryButton } from 'office-ui-fabric-react'
+import { getPossibleMoves } from '../GamePlay/MovePieces'
 
 const URL = process.env.REACT_APP_BACKEND_URL
 
@@ -144,6 +145,15 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
       const moveMessage = message as MoveMessage;
       var playerPieces = this.state.playerPieces
 
+      if (moveMessage.status === Status.Finished && !moveMessage.winnerKey) {
+        //opponent claimed victory
+          this.addLog({
+            type: LogMessageType.Finished,
+            winnerColor: this.state.opponentColor
+          })
+          this.setState({status: moveMessage.status})
+      }
+    
       this.processMove(playerPieces, moveMessage.moveFromKey, moveMessage.moveToKey)
       this.setState({playerPieces: playerPieces, 
         opponentMoveFromKey: moveMessage.moveFromKey, 
@@ -183,6 +193,11 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
           color: this.state.opponentColor,
           type:LogMessageType.Join
         })  
+      } else if (statusMessage.status === Status.Finished) {
+        this.addLog({
+          type: LogMessageType.Finished,
+          winnerColor: this.state.color
+        })
       }
       this.setState({
         status: statusMessage.status,
@@ -323,6 +338,33 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
     this.setState({removedPieces: removedPieces})
   }
 
+  checkVictory = () => {
+    for (var i = 0; i < 10; i ++) {
+      for (var j = 0; j < 10; j ++) {
+        const pieceIndex = i + "," + j
+        var piece = this.state.playerPieces[pieceIndex]
+        if (piece && piece.color === this.state.opponentColor) {
+          var firstPossibleMove = getPossibleMoves(this.state.playerPieces, j, i, this.state.opponentColor, true)
+          if (firstPossibleMove.length > 0) {
+            alert("Moveable opponent pieces exist. Continue playing!")
+            return
+          }
+        }
+      }
+    }
+
+    alert("No more movable pieces. you have won!");
+    this.sendMoveMessage({
+      arrangePositions: this.state.playerPieces,
+      winnerKey: undefined,
+      loserKey: undefined,
+      moveFromKey: undefined,
+      moveToKey: undefined,
+      pieces: undefined,
+      isFlagTaken: true  
+    })
+  }
+
   render() {
     return (
         <SideBar
@@ -368,9 +410,16 @@ export class LandingPage extends React.Component<{}, LandingPageState> {
         <SignUpPageComponent submitJoinGameMessage={this.submitJoinGameMessage} />
       :  
       <>
-        <button onClick={() => this.onSetSidebarOpen(true)} className="LogsButton">
+        <PrimaryButton onClick={() => this.onSetSidebarOpen(true)} className="LogsButton">
         View logs
-        </button>
+        </PrimaryButton>
+
+        <PrimaryButton 
+          disabled={!(this.state.status === Status.WaitingFoBlue || this.state.status === Status.WaitingForRed)}
+          onClick={() => this.checkVictory()} 
+          className="ClaimVictoryButton">
+        ClaimVictory
+        </PrimaryButton>
 
         <Board 
         playerColor={this.state.color} 

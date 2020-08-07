@@ -43,6 +43,7 @@ export enum LogMessageType {
     Attack,
     AttackWin,
     TakeOut,
+    Finished
 }
 
 export interface MoveMessageParams {
@@ -63,5 +64,4 @@ export interface Result {
 }
 
 export type PieceMap = Record<string, PieceContent>;
-export type ElementMap = Record<string, HTMLTableDataCellElement>;
 

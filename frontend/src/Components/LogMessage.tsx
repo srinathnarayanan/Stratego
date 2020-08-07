@@ -20,7 +20,12 @@ export interface MoveToEmptySpaceLogMessageProps {
   emptySpotKey: string
 }
 
-export type LogMessageComponentProps = AttackLogMessageProps | ConnectLogMessageProps | MoveToEmptySpaceLogMessageProps
+export interface GameOverLogMessageProps {
+  type: LogMessageType,
+  winnerColor: Color
+}
+
+export type LogMessageComponentProps = AttackLogMessageProps | ConnectLogMessageProps | MoveToEmptySpaceLogMessageProps | GameOverLogMessageProps
 
 export class LogMessageComponent extends React.Component<LogMessageComponentProps> {
 
@@ -55,6 +60,12 @@ export class LogMessageComponent extends React.Component<LogMessageComponentProp
           const moveToEmptySpotParams = this.props as MoveToEmptySpaceLogMessageProps
           this.message = " moved to the empty spot at " + moveToEmptySpotParams.emptySpotKey
           this.sourceImageName = "/images/Blocked" + Color[moveToEmptySpotParams.color] + ".jpg"
+          break;
+
+        case LogMessageType.Finished: 
+          const gameOverParams = this.props as GameOverLogMessageProps
+          this.message = " Won. Game over!" 
+          this.sourceImageName = "/images/Blocked" + Color[gameOverParams.winnerColor] + ".jpg"
           break;
 
         default:
