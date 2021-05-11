@@ -9,7 +9,7 @@
     "@types/react-dom": "^16.9.8",
     "@types/react-sidebar": "^3.0.0",
     "@types/socket.io-client": "^1.4.33",
-    "lodash": "^4.17.19",
+    "lodash": "^4.17.21",
     "nodemon": "^2.0.4",
     "office-ui-fabric-react": "^7.126.1",
     "prop-types": "^15.6.2",
